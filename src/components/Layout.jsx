@@ -15,7 +15,7 @@ const Layout = ({ children }) => {
             <header>
                 <div className="logo-wrapper">
                     <div className="logo-icon">Ψ</div>
-                    <span className="app-title">HEARTSPACE by DNA AI</span>
+                    <span className="app-title">HeartSpace by DNA AI</span>
                 </div>
                 <nav>
                     <Link to="/" className={`nav-link ${isHome ? 'active' : ''}`}>Trang chủ</Link>
@@ -31,7 +31,7 @@ const Layout = ({ children }) => {
             </main>
 
             <footer>
-                <p>© 2026 HEARTSPACE by DNA AI</p>
+                <p>© 2026 HeartSpace by DNA AI</p>
                 <p style={{ fontSize: '0.75rem', marginTop: '0.5rem' }}>Mọi thông tin trao đổi đều mang tính chất tham khảo và hỗ trợ giải tỏa cảm xúc.</p>
             </footer>
         </div>

@@ -23,7 +23,7 @@ const Home = () => {
                     Thấu hiểu bản thân,<br />Kiến tạo hạnh phúc.
                 </h1>
                 <p style={{ fontSize: '1.125rem', color: 'var(--text-light)', marginBottom: '2.5rem', maxWidth: '40rem', margin: '0 auto 2.5rem auto', lineHeight: '1.6' }}>
-                    HEARTSPACE là người bạn đồng hành AI giúp bạn vượt qua áp lực, thấu hiểu cảm xúc và tìm thấy sự bình yên trong tâm hồn.
+                    HeartSpace là người bạn đồng hành AI giúp bạn vượt qua áp lực, thấu hiểu cảm xúc và tìm thấy sự bình yên trong tâm hồn.
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
                     <Link to="/chatbot" className="btn btn-primary" style={{ padding: '0.875rem 2rem', fontSize: '1rem', textDecoration: 'none' }}>
