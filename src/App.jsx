@@ -1,0 +1,33 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import './index.css';
+import Layout from './components/Layout';
+import Home from './pages/Home';
+import Chatbot from './pages/Chatbot';
+import MBTI from './pages/MBTI';
+import StressTest from './pages/StressTest';
+import Emotion from './pages/Emotion';
+import Career from './pages/Career';
+import Library from './pages/Library';
+import Community from './pages/Community';
+
+function App() {
+  return (
+    <Router>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/chatbot" element={<Chatbot />} />
+          <Route path="/mbti" element={<MBTI />} />
+          <Route path="/test" element={<StressTest />} />
+          <Route path="/emotion" element={<Emotion />} />
+          <Route path="/career" element={<Career />} />
+          <Route path="/library" element={<Library />} />
+          <Route path="/community" element={<Community />} />
+        </Routes>
+      </Layout>
+    </Router>
+  );
+}
+
+export default App;
