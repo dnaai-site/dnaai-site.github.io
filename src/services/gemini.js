@@ -3,12 +3,12 @@ export const getGeminiResponse = async (userMessage, history = []) => {
 
     if (!API_KEY) return "Lỗi: Chưa nạp được API Key.";
 
-    // Sử dụng endpoint REST trực tiếp của Google với model Gemini 2.5 Flash
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+    // Sử dụng endpoint REST trực tiếp của Google với model Gemini 1.5 Flash
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
     try {
-        // Chỉ lấy 2 tin nhắn gần nhất để tối ưu hóa dữ liệu gửi đi
-        const chatHistory = history.slice(-2).map(msg => ({
+        // Lấy 6 tin nhắn gần nhất để giữ ngữ cảnh cuộc trò chuyện
+        const chatHistory = history.slice(-6).map(msg => ({
             role: msg.role === "ai" ? "model" : "user",
             parts: [{ text: msg.text }],
         }));

@@ -79,8 +79,8 @@ const Home = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
                     </div>
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.75rem' }}>Hướng Nghiệp</h3>
-                    <p style={{ color: 'var(--text-light)', lineHeight: '1.6' }}>Tìm ra con đường sự nghiệp phù hợp dựa trên tính cách và sở thích.</p>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.75rem' }}>Hướng Nghiệp AI</h3>
+                    <p style={{ color: 'var(--text-light)', lineHeight: '1.6' }}>AI phân tích tính cách và gợi ý ngành nghề phù hợp nhất với bạn.</p>
                 </Link>
                 <Link to="/community" className="glass-card" style={{ textDecoration: 'none', color: 'inherit' }}>
                     <div className="tool-icon-wrapper">
@@ -89,7 +89,16 @@ const Home = () => {
                         </svg>
                     </div>
                     <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.75rem' }}>Cộng Đồng</h3>
-                    <p style={{ color: 'var(--text-light)', lineHeight: '1.6' }}>Chia sẻ câu chuyện của bạn và nhận sự đồng cảm từ cộng đồng ẩn danh.</p>
+                    <p style={{ color: 'var(--text-light)', lineHeight: '1.6' }}>Chia sẻ câu chuyện ẩn danh và nhận sự đồng cảm từ cộng đồng.</p>
+                </Link>
+                <Link to="/library" className="glass-card" style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <div className="tool-icon-wrapper">
+                        <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    </div>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.75rem' }}>Thư Viện</h3>
+                    <p style={{ color: 'var(--text-light)', lineHeight: '1.6' }}>Kho bài viết tâm lý học và kỹ năng sống chuyên sâu.</p>
                 </Link>
             </div>
         </div>
@@ -97,3 +106,4 @@ const Home = () => {
 };
 
 export default Home;
+

@@ -1,44 +1,57 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, db } from '../services/firebase';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import { auth, db, logout } from '../services/firebase';
 
-const AuthContext = createContext();
-
-export const useAuth = () => useContext(AuthContext);
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [currentUser, setCurrentUser] = useState(null);
-    const [userData, setUserData] = useState(null);
+    const [user, setUser] = useState(null);
+    const [userProfile, setUserProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            setCurrentUser(user);
-            if (user) {
-                const docRef = doc(db, "users", user.uid);
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    setUserData(docSnap.data());
+        if (!auth) {
+            setLoading(false);
+            return;
+        }
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                setUser(firebaseUser);
+                try {
+                    const docRef = doc(db, 'users', firebaseUser.uid);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        setUserProfile(docSnap.data());
+                    }
+                } catch (e) {
+                    console.warn('Firestore unavailable, using basic user info:', e);
+                    setUserProfile({ username: firebaseUser.email?.split('@')[0] || 'Người dùng', email: firebaseUser.email });
                 }
             } else {
-                setUserData(null);
+                setUser(null);
+                setUserProfile(null);
             }
             setLoading(false);
         });
-
-        return unsubscribe;
+        return () => unsubscribe();
     }, []);
 
-    const value = {
-        currentUser,
-        userData,
-        loading
+    const handleLogout = async () => {
+        await logout();
+        setUser(null);
+        setUserProfile(null);
     };
 
     return (
-        <AuthContext.Provider value={value}>
+        <AuthContext.Provider value={{ user, userProfile, loading, logout: handleLogout }}>
             {!loading && children}
         </AuthContext.Provider>
     );
+};
+
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (!context) throw new Error('useAuth must be used within an AuthProvider');
+    return context;
 };

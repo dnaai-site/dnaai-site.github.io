@@ -1,9 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getGeminiResponse } from '../services/gemini';
 
+const suggestions = [
+    { label: 'Cảm thấy stress', text: 'Mình đang cảm thấy rất stress về việc học tập, bạn có thể giúp mình không?' },
+    { label: 'Khó ngủ', text: 'Dạo này mình hay bị mất ngủ, có cách nào để cải thiện không?' },
+    { label: 'Áp lực đồng trang lứa', text: 'Mình hay tự so sánh bản thân với bạn bè và thấy rất tự ti.' },
+    { label: 'Muốn thư giãn', text: 'Mình mệt mỏi quá, hãy chỉ cho mình vài cách thư giãn nhanh nhé.' }
+];
+
 const Chatbot = () => {
     const [messages, setMessages] = useState([
-        { role: 'ai', text: 'Chào bạn, mình là trợ lý AI của HeartSpace. Hôm nay bạn cảm thấy thế nào? Hãy chia sẻ với mình nhé.' }
+        { role: 'ai', text: 'Chào bạn, mình là người bạn đồng hành AI của HeartSpace. Hôm nay bạn cảm thấy thế nào? Hãy chia sẻ với mình bất cứ điều gì đang làm bạn bận lòng nhé.' }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -17,52 +24,68 @@ const Chatbot = () => {
         scrollToBottom();
     }, [messages, isLoading]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!input.trim() || isLoading) return;
+    const sendMessage = async (text) => {
+        if (!text.trim() || isLoading) return;
 
-        const userMessage = { role: 'user', text: input };
+        const userMessage = { role: 'user', text };
         setMessages(prev => [...prev, userMessage]);
-        const currentInput = input;
-        setInput('');
         setIsLoading(true);
 
         try {
-            // Get conversation history for context (last 10 messages)
             const history = messages.slice(-10);
-            const aiResponseText = await getGeminiResponse(currentInput, history);
-
+            const aiResponseText = await getGeminiResponse(text, history);
             setMessages(prev => [...prev, { role: 'ai', text: aiResponseText }]);
         } catch (error) {
             console.error("Chat Error:", error);
-            setMessages(prev => [...prev, { role: 'ai', text: "Mình hơi bối rối một chút, bạn có thể nói lại được không?" }]);
+            setMessages(prev => [...prev, { role: 'ai', text: "Mình hơi bối rối một chút, bạn có thể nói lại được không? Hoặc thử kiểm tra kết nối mạng nhé." }]);
         } finally {
             setIsLoading(false);
         }
     };
 
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        const text = input;
+        setInput('');
+        sendMessage(text);
+    };
+
+    const handleSuggestion = (text) => {
+        sendMessage(text);
+    };
+
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 0' }}>
-            <div className="glass-card overflow-hidden" style={{ minHeight: '650px', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(0,0,0,0.05)', textAlign: 'center', background: 'white' }}>
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: '800', background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Người bạn đồng hành AI</h3>
-                    <p style={{ fontSize: '0.875rem', color: 'var(--text-light)' }}>Mọi bí mật của bạn đều được bảo mật tuyệt đối</p>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '2rem 0' }}>
+            <div className="glass-card overflow-hidden" style={{ minHeight: '700px', display: 'flex', flexDirection: 'column', background: 'rgba(255, 255, 255, 0.7)' }}>
+                {/* Chat Header */}
+                <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', gap: '1rem', background: 'white' }}>
+                    <div style={{ width: '3rem', height: '3rem', background: 'var(--primary)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', boxShadow: '0 8px 16px -4px rgba(139, 92, 246, 0.4)' }}>✨</div>
+                    <div style={{ flex: 1 }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: '800', background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.125rem' }}>Trợ Lý Tâm Hồn AI</h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                            <span style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%' }}></span>
+                            <span style={{ fontSize: '0.8125rem', color: '#64748b', fontWeight: '600' }}>Sẵn sàng lắng nghe bạn</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div style={{ flex: 1, overflowY: 'auto', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {/* Messages Area */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'rgba(248, 250, 252, 0.5)' }}>
                     {messages.map((msg, i) => (
                         <div key={i} style={{
-                            maxWidth: '80%',
-                            padding: '1rem 1.25rem',
+                            maxWidth: '85%',
+                            padding: '1.125rem 1.5rem',
                             borderRadius: '1.5rem',
                             fontSize: '1rem',
-                            lineHeight: '1.6',
+                            lineHeight: '1.7',
                             alignSelf: msg.role === 'ai' ? 'flex-start' : 'flex-end',
                             background: msg.role === 'ai' ? 'white' : 'var(--primary)',
                             color: msg.role === 'ai' ? '#1e293b' : 'white',
                             borderBottomLeftRadius: msg.role === 'ai' ? '0.25rem' : '1.5rem',
                             borderBottomRightRadius: msg.role === 'user' ? '0.25rem' : '1.5rem',
-                            boxShadow: msg.role === 'ai' ? '0 4px 6px -1px rgba(0,0,0,0.05)' : '0 10px 15px -3px rgba(139, 92, 246, 0.3)'
+                            boxShadow: msg.role === 'ai' ? '0 4px 20px -5px rgba(0,0,0,0.05)' : '0 10px 25px -5px rgba(139, 92, 246, 0.3)',
+                            border: msg.role === 'ai' ? '1px solid #f1f5f9' : 'none',
+                            whiteSpace: 'pre-wrap'
                         }}>
                             {msg.text}
                         </div>
@@ -71,10 +94,11 @@ const Chatbot = () => {
                         <div style={{
                             alignSelf: 'flex-start',
                             background: 'white',
-                            padding: '1rem 1.25rem',
+                            padding: '1.125rem 1.5rem',
                             borderRadius: '1.5rem',
                             borderBottomLeftRadius: '0.25rem',
-                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
+                            boxShadow: '0 4px 20px -5px rgba(0,0,0,0.05)',
+                            border: '1px solid #f1f5f9'
                         }}>
                             <div className="typing-loader">
                                 <span></span><span></span><span></span>
@@ -84,35 +108,87 @@ const Chatbot = () => {
                     <div ref={messagesEndRef} />
                 </div>
 
-                <form onSubmit={handleSubmit} style={{ padding: '1.5rem', background: 'white', borderTop: '1px solid rgba(0,0,0,0.05)', display: 'flex', gap: '1rem' }}>
-                    <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        disabled={isLoading}
-                        placeholder={isLoading ? "AI đang suy nghĩ..." : "Hôm nay bạn thế nào? Chia sẻ cùng mình nhé..."}
-                        style={{
-                            flex: 1,
-                            border: '2px solid #f1f5f9',
-                            borderRadius: '999px',
-                            padding: '0.875rem 1.5rem',
-                            outline: 'none',
-                            fontSize: '1rem',
-                            transition: 'all 0.2s',
-                            opacity: isLoading ? 0.7 : 1
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
-                        onBlur={(e) => e.target.style.borderColor = '#f1f5f9'}
-                    />
-                    <button
-                        type="submit"
-                        className="btn btn-primary"
-                        disabled={isLoading}
-                        style={{ padding: '0 2rem', borderRadius: '999px', opacity: isLoading ? 0.7 : 1 }}
-                    >
-                        {isLoading ? "..." : "Gửi"}
-                    </button>
-                </form>
+                {/* Suggestions and Input */}
+                <div style={{ padding: '1.5rem 2rem 2rem 2rem', background: 'white', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                    {messages.length === 1 && !isLoading && (
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <p style={{ fontSize: '0.8125rem', color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Gợi ý cho bạn:</p>
+                            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                {suggestions.map((s, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => handleSuggestion(s.text)}
+                                        style={{
+                                            padding: '0.625rem 1.25rem',
+                                            borderRadius: '999px',
+                                            border: '1.5px solid #ede9fe',
+                                            background: 'white',
+                                            color: '#6d28d9',
+                                            fontSize: '0.875rem',
+                                            fontWeight: '700',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            fontFamily: 'Plus Jakarta Sans, sans-serif'
+                                        }}
+                                        className="suggestion-btn"
+                                    >
+                                        {s.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '1rem', position: 'relative' }}>
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            disabled={isLoading}
+                            placeholder={isLoading ? "AI đang suy nghĩ..." : "Hôm nay bạn thế nào? Chia sẻ cùng mình nhé..."}
+                            style={{
+                                flex: 1,
+                                border: '2px solid #f1f5f9',
+                                borderRadius: '1.25rem',
+                                padding: '1rem 4rem 1rem 1.5rem',
+                                outline: 'none',
+                                fontSize: '1rem',
+                                transition: 'all 0.2s',
+                                background: '#f8fafc',
+                                opacity: isLoading ? 0.7 : 1,
+                                fontFamily: 'Plus Jakarta Sans, sans-serif'
+                            }}
+                            onFocus={(e) => { e.target.style.borderColor = 'var(--primary)'; e.target.style.background = 'white'; }}
+                            onBlur={(e) => { e.target.style.borderColor = '#f1f5f9'; e.target.style.background = '#f8fafc'; }}
+                        />
+                        <button
+                            type="submit"
+                            disabled={isLoading || !input.trim()}
+                            style={{
+                                position: 'absolute',
+                                right: '0.75rem',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                width: '2.75rem',
+                                height: '2.75rem',
+                                borderRadius: '0.875rem',
+                                background: input.trim() ? 'var(--primary)' : '#e2e8f0',
+                                border: 'none',
+                                color: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.2s',
+                                cursor: input.trim() ? 'pointer' : 'default'
+                            }}
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
             </div>
 
             <style>{`
@@ -124,7 +200,15 @@ const Chatbot = () => {
                 }
                 .typing-loader span:nth-child(2) { animation-delay: 0.2s; }
                 .typing-loader span:nth-child(3) { animation-delay: 0.4s; }
-                @keyframes typing { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); opacity: 1; } }
+                @keyframes typing { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); opacity: 1; } }
+                
+                .suggestion-btn:hover {
+                    background: var(--primary) !important;
+                    color: white !important;
+                    border-color: var(--primary) !important;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+                }
             `}</style>
         </div>
     );

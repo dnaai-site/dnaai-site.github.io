@@ -29,10 +29,24 @@ const firebaseConfig = {
     appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const googleProvider = new GoogleAuthProvider();
+// Check if Firebase is configured
+const isFirebaseConfigured = firebaseConfig.apiKey && firebaseConfig.projectId;
+
+let app, auth, db, googleProvider;
+
+if (isFirebaseConfigured) {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    googleProvider = new GoogleAuthProvider();
+} else {
+    console.warn('⚠️ Firebase chưa được cấu hình. Tính năng đăng nhập sẽ không hoạt động. Vui lòng thêm VITE_FIREBASE_* vào file .env');
+    auth = null;
+    db = null;
+    googleProvider = null;
+}
+
+export { auth, db, googleProvider };
 
 // Custom Auth Functions
 export const registerUser = async (userData) => {
@@ -63,19 +77,27 @@ export const registerUser = async (userData) => {
     return user;
 };
 
-export const loginWithId = async (id, password) => {
-    // 1. Find email associated with ID
-    const idQuery = query(collection(db, "users"), where("username", "==", id));
-    const idSnapshot = await getDocs(idQuery);
+export const loginWithId = async (idOrEmail, password) => {
+    const term = idOrEmail.trim();
 
-    if (idSnapshot.empty) {
-        throw new Error("ID không tồn tại.");
+    // 1. Tìm thông tin người dùng qua ID (username)
+    let idQuery = query(collection(db, "users"), where("username", "==", term));
+    let snapshot = await getDocs(idQuery);
+
+    // 2. Nếu không thấy, thử tìm qua Email
+    if (snapshot.empty) {
+        idQuery = query(collection(db, "users"), where("email", "==", term));
+        snapshot = await getDocs(idQuery);
     }
 
-    const userData = idSnapshot.docs[0].data();
+    if (snapshot.empty) {
+        throw new Error("ID hoặc Email không tồn tại.");
+    }
+
+    const userData = snapshot.docs[0].data();
     const email = userData.email;
 
-    // 2. Sign in with Email
+    // 3. Đăng nhập thực sự bằng Firebase Auth
     return await signInWithEmailAndPassword(auth, email, password);
 };
 

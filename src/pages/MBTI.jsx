@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 const questions = [
     // E vs I (Extraversion vs Introversion)
@@ -32,22 +33,22 @@ const questions = [
 ];
 
 const types = {
-    "ISTJ": { title: "Người Trách Nhiệm", desc: "Nghiêm túc, thực tế và đáng tin cậy. Họ coi trọng truyền thống và sự trật tự.", strengths: ["Có trách nhiệm", "Tỉ mỉ", "Trung thực"], weaknesses: ["Cứng nhắc", "Khó thích nghi", "Hay phán xét"] },
-    "ISFJ": { title: "Người Nuôi Dưỡng", desc: "Ấm áp, tận tụy và luôn quan tâm đến người khác. Họ làm việc chăm chỉ để đảm bảo sự hài hòa.", strengths: ["Hỗ trợ tốt", "Đáng tin cậy", "Kiên nhẫn"], weaknesses: ["Quá nhún nhường", "Ngại thay đổi", "Dễ bị lợi dụng"] },
-    "INFJ": { title: "Người Che Chở", desc: "Sâu sắc, lý tưởng hóa và đầy lòng trắc ẩn. Họ luôn tìm kiếm ý nghĩa sâu xa trong cuộc sống.", strengths: ["Sáng tạo", "Thấu hiểu", "Quyết tâm"], weaknesses: ["Nhạy cảm", "Dễ kiệt sức", "Cầu toàn"] },
-    "INTJ": { title: "Nhà Kiến Tạo", desc: "Tư duy chiến lược, độc lập và có tầm nhìn xa. Họ luôn tìm cách cải tiến mọi thứ.", strengths: ["Thông minh", "Tự tin", "Chiến lược"], weaknesses: ["Kiêu ngạo", "Quá phân tích", "Thiếu kiên nhẫn"] },
-    "ISTP": { title: "Nhà Kỹ Thuật", desc: "Thực tế, linh hoạt và giỏi giải quyết vấn đề. Họ thích tìm hiểu cách mọi thứ vận hành.", strengths: ["Lạc quan", "Sáng tạo", "Thực tế"], weaknesses: ["Cứng đầu", "Rủi ro cao", "Kín đáo"] },
-    "ISFP": { title: "Người Nghệ Sĩ", desc: "Nhẹ nhàng, thân thiện và yêu cái đẹp. Họ thích sống trong hiện tại và tận hưởng từng khoảnh khắc.", strengths: ["Duyên dáng", "Nghệ thuật", "Đam mê"], weaknesses: ["Dễ căng thẳng", "Cạnh tranh kém", "Khó đoán"] },
-    "INFP": { title: "Người Hòa Giải", desc: "Lý tưởng, trung thành và luôn tìm kiếm sự tốt đẹp trong mọi người. Họ sống theo giá trị riêng.", strengths: ["Đồng cảm", "Sáng tạo", "Cởi mở"], weaknesses: ["Mơ mộng quá mức", "Dễ tổn thương", "Thiếu thực tế"] },
-    "INTP": { title: "Nhà Tư Duy", desc: "Sáng tạo, logic và tò mò. Họ thích phân tích các hệ thống và ý tưởng trừu tượng.", strengths: ["Phân tích tốt", "Tư duy mở", "Khách quan"], weaknesses: ["Lơ đãng", "Thiếu tổ chức", "Vô tâm"] },
-    "ESTP": { title: "Người Thực Thi", desc: "Năng động, thực tế và thích hành động ngay lập tức. Họ giải quyết vấn đề một cách linh hoạt.", strengths: ["Táo bạo", "Hòa đồng", "Thẳng thắn"], weaknesses: ["Thiếu kiên nhẫn", "Rủi ro cao", "Mau chán"] },
-    "ESFP": { title: "Người Trình Diễn", desc: "Vui vẻ, nhiệt tình và thích là trung tâm của sự chú ý. Họ làm cho cuộc sống trở nên thú vị.", strengths: ["Táo bạo", "Thực tế", "Thẩm mỹ tốt"], weaknesses: ["Khó tập trung", "Dễ tự ái", "Kém quy hoạch"] },
-    "ENFP": { title: "Người Truyền Cảm Hứng", desc: "Nhiệt tình, sáng tạo và hòa đồng. Họ luôn tìm thấy khả năng trong mọi việc.", strengths: ["Tò mò", "Giao tiếp tốt", "Năng lượng cao"], weaknesses: ["Thiếu tập trung", "Suy nghĩ quá nhiều", "Dễ căng thẳng"] },
-    "ENTP": { title: "Người Tranh Biện", desc: "Thông minh, nhanh trí và thích thử thách các ý tưởng. Họ giỏi tìm ra giải pháp mới.", strengths: ["Hiểu biết rộng", "Tư duy nhanh", "Sáng tạo"], weaknesses: ["Thích tranh cãi", "Tàn nhẫn", "Mau chán"] },
-    "ESTJ": { title: "Người Điều Hành", desc: "Thực tế, quyết đoán và giỏi tổ chức. Họ thích quản lý mọi việc theo quy trình rõ ràng.", strengths: ["Tận tụy", "Mạnh mẽ", "Tổ chức tốt"], weaknesses: ["Cứng nhắc", "Khó thư giãn", "Phán xét"] },
-    "ESFJ": { title: "Người Chăm Sóc", desc: "Tận tâm, hòa đồng và thích giúp đỡ người khác. Họ coi trọng sự hòa hợp và truyền thống.", strengths: ["Trung thành", "Nhạy cảm", "Giỏi kết nối"], weaknesses: ["Cần được khen", "Thiếu linh hoạt", "Dễ bị chỉ trích"] },
-    "ENFJ": { title: "Người Chỉ Dẫn", desc: "Lôi cuốn, đáng tin cậy và giỏi lãnh đạo. Họ luôn nhìn thấy tiềm năng ở người khác.", strengths: ["Khoan dung", "Đáng tin cậy", "Lôi cuốn"], weaknesses: ["Quá duy tâm", "Quá nhạy cảm", "Hay lo lắng"] },
-    "ENTJ": { title: "Nhà Lãnh Đạo", desc: "Thẳng thắn, quyết đoán và có khả năng nhìn xa trông rộng. Họ giỏi vạch ra kế hoạch dài hạn.", strengths: ["Hiệu quả", "Tự tin", "Lý trí"], weaknesses: ["Độc đoán", "Kiêu ngạo", "Lạnh lùng"] }
+    "ISTJ": { title: "Người Trách Nhiệm", desc: "Nghiêm túc, thực tế và đáng tin cậy. Họ coi trọng truyền thống và sự trật tự.", strengths: ["Có trách nhiệm", "Tỉ mỉ", "Trung thực"], weaknesses: ["Cứng nhắc", "Khó thích nghi", "Hay phán xét"], compatibility: "ESFP, ESTP" },
+    "ISFJ": { title: "Người Nuôi Dưỡng", desc: "Ấm áp, tận tụy và luôn quan tâm đến người khác. Họ làm việc chăm chỉ để đảm bảo sự hài hòa.", strengths: ["Hỗ trợ tốt", "Đáng tin cậy", "Kiên nhẫn"], weaknesses: ["Quá nhún nhường", "Ngại thay đổi", "Dễ bị lợi dụng"], compatibility: "ESTP, ESFP" },
+    "INFJ": { title: "Người Che Chở", desc: "Sâu sắc, lý tưởng hóa và đầy lòng trắc ẩn. Họ luôn tìm kiếm ý nghĩa sâu xa trong cuộc sống.", strengths: ["Sáng tạo", "Thấu hiểu", "Quyết tâm"], weaknesses: ["Nhạy cảm", "Dễ kiệt sức", "Cầu toàn"], compatibility: "ENFP, ENTP" },
+    "INTJ": { title: "Nhà Kiến Tạo", desc: "Tư duy chiến lược, độc lập và có tầm nhìn xa. Họ luôn tìm cách cải tiến mọi thứ.", strengths: ["Thông minh", "Tự tin", "Chiến lược"], weaknesses: ["Kiêu ngạo", "Quá phân tích", "Thiếu kiên nhẫn"], compatibility: "ENFP, ENTP" },
+    "ISTP": { title: "Nhà Kỹ Thuật", desc: "Thực tế, linh hoạt và giỏi giải quyết vấn đề. Họ thích tìm hiểu cách mọi thứ vận hành.", strengths: ["Lạc quan", "Sáng tạo", "Thực tế"], weaknesses: ["Cứng đầu", "Rủi ro cao", "Kín đáo"], compatibility: "ESFJ, ESTJ" },
+    "ISFP": { title: "Người Nghệ Sĩ", desc: "Nhẹ nhàng, thân thiện và yêu cái đẹp. Họ thích sống trong hiện tại và tận hưởng từng khoảnh khắc.", strengths: ["Duyên dáng", "Nghệ thuật", "Đam mê"], weaknesses: ["Dễ căng thẳng", "Cạnh tranh kém", "Khó đoán"], compatibility: "ENFJ, ESFJ" },
+    "INFP": { title: "Người Hòa Giải", desc: "Lý tưởng, trung thành và luôn tìm kiếm sự tốt đẹp trong mọi người. Họ sống theo giá trị riêng.", strengths: ["Đồng cảm", "Sáng tạo", "Cởi mở"], weaknesses: ["Mơ mộng quá mức", "Dễ tổn thương", "Thiếu thực tế"], compatibility: "ENFJ, ENTJ" },
+    "INTP": { title: "Nhà Tư Duy", desc: "Sáng tạo, logic và tò mò. Họ thích phân tích các hệ thống và ý tưởng trừu tượng.", strengths: ["Phân tích tốt", "Tư duy mở", "Khách quan"], weaknesses: ["Lơ đãng", "Thiếu tổ chức", "Vô tâm"], compatibility: "ENTJ, ENFJ" },
+    "ESTP": { title: "Người Thực Thi", desc: "Năng động, thực tế và thích hành động ngay lập tức. Họ giải quyết vấn đề một cách linh hoạt.", strengths: ["Táo bạo", "Hòa đồng", "Thẳng thắn"], weaknesses: ["Thiếu kiên nhẫn", "Rủi ro cao", "Mau chán"], compatibility: "ISFJ, ISTJ" },
+    "ESFP": { title: "Người Trình Diễn", desc: "Vui vẻ, nhiệt tình và thích là trung tâm của sự chú ý. Họ làm cho cuộc sống trở nên thú vị.", strengths: ["Táo bạo", "Thực tế", "Thẩm mỹ tốt"], weaknesses: ["Khó tập trung", "Dễ tự ái", "Kém quy hoạch"], compatibility: "ISTJ, ISFJ" },
+    "ENFP": { title: "Người Truyền Cảm Hứng", desc: "Nhiệt tình, sáng tạo và hòa đồng. Họ luôn tìm thấy khả năng trong mọi việc.", strengths: ["Tò mò", "Giao tiếp tốt", "Năng lượng cao"], weaknesses: ["Thiếu tập trung", "Suy nghĩ quá nhiều", "Dễ căng thẳng"], compatibility: "INFJ, INTJ" },
+    "ENTP": { title: "Người Tranh Biện", desc: "Thông minh, nhanh trí và thích thử thách các ý tưởng. Họ giỏi tìm ra giải pháp mới.", strengths: ["Hiểu biết rộng", "Tư duy nhanh", "Sáng tạo"], weaknesses: ["Thích tranh cãi", "Tàn nhẫn", "Mau chán"], compatibility: "INTJ, INFJ" },
+    "ESTJ": { title: "Người Điều Hành", desc: "Thực tế, quyết đoán và giỏi tổ chức. Họ thích quản lý mọi việc theo quy trình rõ ràng.", strengths: ["Tận tụy", "Mạnh mẽ", "Tổ chức tốt"], weaknesses: ["Cứng nhắc", "Khó thư giãn", "Phán xét"], compatibility: "ISFP, ISTP" },
+    "ESFJ": { title: "Người Chăm Sóc", desc: "Tận tâm, hòa đồng và thích giúp đỡ người khác. Họ coi trọng sự hòa hợp và truyền thống.", strengths: ["Trung loyal", "Nhạy cảm", "Giỏi kết nối"], weaknesses: ["Cần được khen", "Thiếu linh hoạt", "Dễ bị chỉ trích"], compatibility: "ISFP, ISTP" },
+    "ENFJ": { title: "Người Chỉ Dẫn", desc: "Lôi cuốn, đáng tin cậy và giỏi lãnh đạo. Họ luôn nhìn thấy tiềm năng ở người khác.", strengths: ["Khoan dung", "Đáng tin cậy", "Lôi cuốn"], weaknesses: ["Quá duy tâm", "Quá nhạy cảm", "Hay lo lắng"], compatibility: "INFP, ISFP" },
+    "ENTJ": { title: "Nhà Lãnh Đạo", desc: "Thẳng thắn, quyết đoán và có khả năng nhìn xa trông rộng. Họ giỏi vạch ra kế hoạch dài hạn.", strengths: ["Hiệu quả", "Tự tin", "Lý trí"], weaknesses: ["Độc đoán", "Kiêu ngạo", "Lạnh lùng"], compatibility: "INFP, INTP" }
 };
 
 const MBTI = () => {
@@ -58,37 +59,43 @@ const MBTI = () => {
 
     const startTest = () => setStage('quiz');
 
-    const handleSelect = (value) => {
+    const handleAnswer = (value) => {
         const q = questions[currentIndex];
-        setAnswers({ ...answers, [q.id]: value });
+        const newAnswers = { ...answers, [q.id]: value };
+        setAnswers(newAnswers);
 
         if (currentIndex < questions.length - 1) {
-            setTimeout(() => setCurrentIndex(currentIndex + 1), 300);
+            setCurrentIndex(currentIndex + 1);
         } else {
-            finishTest();
+            setStage('loading');
+            setTimeout(() => calculateResult(newAnswers), 2000);
         }
     };
 
-    const finishTest = () => {
-        setStage('loading');
-        setTimeout(() => {
-            calculateResult();
-        }, 2000);
+    const goBack = () => {
+        if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
     };
 
-    const calculateResult = () => {
+    const calculateResult = (finalAnswers) => {
         let scores = { E: 0, I: 0, N: 0, S: 0, T: 0, F: 0, J: 0, P: 0 };
 
         questions.forEach(q => {
-            let val = answers[q.id] || 3;
-            let oppDim = q.dim === 'E' ? 'I' : q.dim === 'N' ? 'S' : q.dim === 'T' ? 'F' : 'P';
+            let val = finalAnswers[q.id] || 3;
+            const weight = Math.abs(val - 3);
+
+            let primary = q.dim;
+            let secondary = '';
+            if (primary === 'E') secondary = 'I';
+            else if (primary === 'N') secondary = 'S';
+            else if (primary === 'T') secondary = 'F';
+            else if (primary === 'J') secondary = 'P';
 
             if (q.rev) {
-                if (val > 3) scores[oppDim] += (val - 3);
-                else if (val < 3) scores[q.dim] += (3 - val);
+                if (val > 3) scores[secondary] += weight;
+                else if (val < 3) scores[primary] += weight;
             } else {
-                if (val > 3) scores[q.dim] += (val - 3);
-                else if (val < 3) scores[oppDim] += (3 - val);
+                if (val > 3) scores[primary] += weight;
+                else if (val < 3) scores[secondary] += weight;
             }
         });
 
@@ -98,105 +105,159 @@ const MBTI = () => {
         type += scores.T >= scores.F ? "T" : "F";
         type += scores.J >= scores.P ? "J" : "P";
 
-        setResult({ type, ...types[type] });
+        setResult({ type, ...types[type], scores });
         setStage('result');
     };
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 0' }}>
-            <div className="glass-card overflow-hidden" style={{ minHeight: '500px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '2rem 0' }}>
+            <div className="glass-card overflow-hidden" style={{ minHeight: '600px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+
                 {stage === 'welcome' && (
-                    <div style={{ padding: '3rem', textAlign: 'center' }} className="fade-in">
-                        <div style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>🧩</div>
-                        <h2 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '1rem', color: '#1e293b' }}>Khám Phá Tính Cách</h2>
-                        <p style={{ color: 'var(--text-light)', fontSize: '1.125rem', marginBottom: '2.5rem' }}>
-                            Hiểu rõ bản thân hơn để định hướng tương lai và các mối quan hệ hiệu quả.
+                    <div style={{ padding: '4rem 3rem', textAlign: 'center' }} className="fade-in">
+                        <div style={{ fontSize: '5rem', marginBottom: '2rem' }}>🧩</div>
+                        <h2 className="hero-gradient-text" style={{ fontSize: '3rem', fontWeight: '900', marginBottom: '1.5rem', color: '#1e293b' }}>Khám Phá Tính Cách</h2>
+                        <p style={{ color: 'var(--text-light)', fontSize: '1.25rem', marginBottom: '3.5rem', lineHeight: '1.7', maxWidth: '600px', margin: '0 auto 3.5rem auto' }}>
+                            Trắc nghiệm MBTI giúp bạn hiểu rõ thế giới nội tâm, cách bạn tiếp nhận thông tin và đưa ra quyết định trong cuộc sống.
                         </p>
-                        <button className="btn btn-primary" onClick={startTest} style={{ padding: '1rem 3rem', fontSize: '1.125rem' }}>Bắt đầu ngay</button>
-                        <p style={{ marginTop: '1.5rem', fontSize: '0.875rem', color: '#94a3b8' }}>Thời gian: 5-10 phút • 24 câu hỏi</p>
+                        <button className="btn btn-primary" onClick={startTest} style={{ padding: '1.25rem 4rem', fontSize: '1.25rem' }}>Bắt đầu ngay</button>
+                        <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'center', gap: '2rem', color: '#94a3b8', fontSize: '1rem', fontWeight: '600' }}>
+                            <span>⏱️ 5-10 phút</span>
+                            <span>📝 24 câu hỏi</span>
+                            <span>✨ Chính xác cao</span>
+                        </div>
                     </div>
                 )}
 
                 {stage === 'quiz' && (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ height: '6px', background: '#f1f5f9' }}>
-                            <div style={{ height: '100%', background: 'var(--primary)', width: `${(currentIndex / questions.length) * 100}%`, transition: 'width 0.4s' }}></div>
+                        <div style={{ height: '8px', background: '#f1f5f9', position: 'relative' }}>
+                            <div style={{ height: '100%', background: 'linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%)', width: `${(currentIndex / questions.length) * 100}%`, transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}></div>
                         </div>
-                        <div style={{ padding: '3rem', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }} className="fade-in">
-                            <span style={{ fontSize: '0.875rem', fontWeight: '700', color: 'var(--primary)', letterSpacing: '0.1em' }}>CÂU HỎI {currentIndex + 1} / 24</span>
-                            <h3 style={{ fontSize: '1.75rem', fontWeight: '700', margin: '2rem 0 4rem 0', color: '#1e293b', minHeight: '100px' }}>{questions[currentIndex].text}</h3>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '500px', margin: '0 auto', width: '100%' }}>
-                                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#ef4444' }}>KHÔNG ĐỒNG Ý</span>
-                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                    {[1, 2, 3, 4, 5].map(v => (
-                                        <button
-                                            key={v}
-                                            onClick={() => handleAnswer(v)}
-                                            style={{
-                                                width: v === 3 ? '30px' : v === 1 || v === 5 ? '50px' : '40px',
-                                                height: v === 3 ? '30px' : v === 1 || v === 5 ? '50px' : '40px',
-                                                borderRadius: '50%',
-                                                border: '2px solid #cbd5e1',
-                                                background: answers[questions[currentIndex].id] === v ? 'var(--primary)' : 'white',
-                                                transition: 'all 0.2s',
-                                                cursor: 'pointer'
-                                            }}
-                                        />
-                                    ))}
+                        <div style={{ padding: '4rem 3rem', flex: 1, display: 'flex', flexDirection: 'column' }} className="fade-in">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+                                <button onClick={goBack} disabled={currentIndex === 0} style={{ background: 'none', border: 'none', color: currentIndex === 0 ? '#e2e8f0' : 'var(--primary)', fontWeight: '800', cursor: currentIndex === 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem' }}>
+                                    ← Quay lại
+                                </button>
+                                <span style={{ fontSize: '0.9375rem', fontWeight: '800', color: '#94a3b8', letterSpacing: '0.1em' }}>CÂU HỎI {currentIndex + 1} / 24</span>
+                            </div>
+
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+                                <h3 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '5rem', color: '#1e293b', lineHeight: '1.4', maxWidth: '700px' }}>{questions[currentIndex].text}</h3>
+
+                                <div className="likert-container" style={{ width: '100%', maxWidth: '600px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', color: '#94a3b8', fontWeight: '800', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        <span style={{ color: '#ef4444' }}>Không đồng ý</span>
+                                        <span style={{ color: '#22c55e' }}>Rất đồng ý</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
+                                        <div style={{ position: 'absolute', top: '50%', left: '0', right: '0', height: '2px', background: '#e2e8f0', zIndex: 0, transform: 'translateY(-50%)' }}></div>
+                                        {[1, 2, 3, 4, 5].map(v => (
+                                            <button
+                                                key={v}
+                                                onClick={() => handleAnswer(v)}
+                                                className={`likert-btn v-${v}`}
+                                                style={{
+                                                    width: v === 3 ? '40px' : v === 1 || v === 5 ? '70px' : '55px',
+                                                    height: v === 3 ? '40px' : v === 1 || v === 5 ? '70px' : '55px',
+                                                    borderRadius: '50%',
+                                                    border: '4px solid white',
+                                                    background: 'white',
+                                                    boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
+                                                    cursor: 'pointer',
+                                                    zIndex: 1,
+                                                    transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    position: 'relative'
+                                                }}
+                                            >
+                                                <div style={{
+                                                    width: '50%', height: '50%', borderRadius: '50%',
+                                                    background: v > 3 ? '#22c55e' : v < 3 ? '#ef4444' : '#cbd5e1',
+                                                    opacity: answers[questions[currentIndex].id] === v ? 1 : 0.3,
+                                                    transform: answers[questions[currentIndex].id] === v ? 'scale(1.2)' : 'scale(1)',
+                                                    transition: 'all 0.2s'
+                                                }}></div>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#22c55e' }}>ĐỒNG Ý</span>
                             </div>
                         </div>
                     </div>
                 )}
 
                 {stage === 'loading' && (
-                    <div style={{ padding: '4rem', textAlign: 'center' }} className="fade-in">
-                        <div className="loader" style={{ width: '60px', height: '60px', border: '5px solid #f3f3f3', borderTop: '5px solid var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 2rem auto' }}></div>
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Đang phân tích...</h3>
-                        <p style={{ color: 'var(--text-light)' }}>Chúng mình đang tổng hợp kết quả dựa trên các câu trả lời của bạn.</p>
+                    <div style={{ padding: '6rem 4rem', textAlign: 'center' }} className="fade-in">
+                        <div className="loader-container" style={{ position: 'relative', width: '100px', height: '100px', margin: '0 auto 3rem auto' }}>
+                            <div className="loader-ring"></div>
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>🧠</div>
+                        </div>
+                        <h3 style={{ fontSize: '2rem', fontWeight: '900', color: '#1e293b', marginBottom: '1rem' }}>Đang giải mã tính cách...</h3>
+                        <p style={{ color: 'var(--text-light)', fontSize: '1.125rem' }}>AI đang phân tích các phản hồi của bạn để tìm ra nhóm hạt nhân phù hợp.</p>
                     </div>
                 )}
 
                 {stage === 'result' && result && (
-                    <div style={{ padding: '3rem' }} className="fade-in">
-                        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-                            <span style={{ textTransform: 'uppercase', fontSize: '0.875rem', fontWeight: '700', color: 'var(--text-light)' }}>Kết quả của bạn là</span>
-                            <h2 style={{ fontSize: '5rem', fontWeight: '900', color: 'var(--primary)', lineHeight: '1' }}>{result.type}</h2>
-                            <h3 style={{ fontSize: '1.75rem', fontWeight: '700' }}>{result.title}</h3>
+                    <div style={{ padding: '4rem' }} className="fade-in">
+                        <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+                            <span style={{ textTransform: 'uppercase', fontSize: '1rem', fontWeight: '800', color: 'var(--primary)', letterSpacing: '0.2em' }}>NHÓM TÍNH CÁCH CỦA BẠN</span>
+                            <h2 style={{ fontSize: '7rem', fontWeight: '900', background: 'linear-gradient(135deg, var(--primary) 0%, #6366f1 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', lineHeight: '1.2', margin: '0.5rem 0' }}>{result.type}</h2>
+                            <h3 style={{ fontSize: '2.5rem', fontWeight: '800', color: '#1e293b' }}>{result.title}</h3>
                         </div>
 
-                        <div style={{ background: '#f8fafc', padding: '2rem', borderRadius: '1.5rem', marginBottom: '2rem' }}>
-                            <p style={{ fontSize: '1.125rem', lineHeight: '1.8', color: '#475569' }}>{result.desc}</p>
+                        <div style={{ background: 'white', border: '1px solid #f1f5f9', padding: '2.5rem', borderRadius: '2rem', marginBottom: '3rem', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+                            <p style={{ fontSize: '1.25rem', lineHeight: '1.9', color: '#475569', textAlign: 'center' }}>"{result.desc}"</p>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
-                            <div>
-                                <h4 style={{ fontWeight: '700', color: '#059669', marginBottom: '1rem' }}>Sức mạnh</h4>
-                                <ul style={{ paddingLeft: '1.25rem', color: '#475569' }}>
-                                    {result.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem', marginBottom: '4rem' }}>
+                            <div style={{ background: '#f0fdf4', padding: '2rem', borderRadius: '1.5rem', border: '1px solid #dcfce7' }}>
+                                <h4 style={{ fontWeight: '900', color: '#16a34a', marginBottom: '1.25rem', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>💪 Thế mạnh</h4>
+                                <ul style={{ listStyle: 'none', padding: 0, color: '#166534', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontWeight: '600' }}>
+                                    {result.strengths.map((s, i) => <li key={i}>✨ {s}</li>)}
                                 </ul>
                             </div>
-                            <div>
-                                <h4 style={{ fontWeight: '700', color: '#dc2626', marginBottom: '1rem' }}>Điểm yếu</h4>
-                                <ul style={{ paddingLeft: '1.25rem', color: '#475569' }}>
-                                    {result.weaknesses.map((w, i) => <li key={i}>{w}</li>)}
+                            <div style={{ background: '#fef2f2', padding: '2rem', borderRadius: '1.5rem', border: '1px solid #fee2e2' }}>
+                                <h4 style={{ fontWeight: '900', color: '#dc2626', marginBottom: '1.25rem', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>⚠️ Cần cải thiện</h4>
+                                <ul style={{ listStyle: 'none', padding: 0, color: '#991b1b', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontWeight: '600' }}>
+                                    {result.weaknesses.map((w, i) => <li key={i}>🎯 {w}</li>)}
                                 </ul>
                             </div>
                         </div>
 
-                        <div style={{ textAlign: 'center' }}>
-                            <button className="btn btn-primary" onClick={() => { setStage('welcome'); setAnswers({}); setCurrentIndex(0); }}>Làm lại bài test</button>
+                        <div style={{ background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', padding: '2.5rem', borderRadius: '2rem', textAlign: 'center', marginBottom: '4rem' }}>
+                            <h4 style={{ fontWeight: '800', color: 'var(--primary)', marginBottom: '1rem', fontSize: '1.25rem' }}>🤝 Mức độ tương thích</h4>
+                            <p style={{ fontSize: '1.125rem', color: '#6d28d9', fontWeight: '700' }}>Bạn sẽ hòa hợp nhất với các nhóm: <span style={{ background: 'white', padding: '0.4rem 1rem', borderRadius: '999px', marginLeft: '0.5rem', boxShadow: '0 4px 10px rgba(139, 92, 246, 0.1)' }}>{result.compatibility}</span></p>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
+                            <button className="btn btn-primary" onClick={() => { setStage('welcome'); setAnswers({}); setCurrentIndex(0); }} style={{ padding: '1rem 3rem' }}>Làm lại bài test</button>
+                            <Link to="/career" className="btn" style={{ background: 'white', border: '2px solid #e2e8f0', color: '#64748b', textDecoration: 'none', padding: '1rem 3rem' }}>Xem hướng nghiệp →</Link>
                         </div>
                     </div>
                 )}
             </div>
 
             <style>{`
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .loader { animation: spin 1s linear infinite; }
-      `}</style>
+                .loader-ring {
+                    border: 8px solid #f3f3f3;
+                    border-top: 8px solid var(--primary);
+                    border-radius: 50%;
+                    width: 100px;
+                    height: 100px;
+                    animation: spin 1.5s linear infinite;
+                }
+                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                
+                .likert-btn:hover {
+                    transform: scale(1.15) translateY(-5px);
+                    box-shadow: 0 10px 25px rgba(139, 92, 246, 0.15);
+                }
+                .likert-btn:active { transform: scale(0.95); }
+            `}</style>
         </div>
     );
 };
