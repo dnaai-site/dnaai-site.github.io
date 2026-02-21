@@ -24,6 +24,8 @@ function App() {
           <Route path="/career" element={<Career />} />
           <Route path="/library" element={<Library />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Routes>
       </Layout>
     </Router>
