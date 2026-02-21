@@ -14,6 +14,9 @@ import Community from './pages/Community';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import Settings from './pages/Settings';
+
 function App() {
   return (
     <AuthProvider>
@@ -30,6 +33,8 @@ function App() {
             <Route path="/community" element={<Community />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
           </Routes>
         </Layout>
       </Router>

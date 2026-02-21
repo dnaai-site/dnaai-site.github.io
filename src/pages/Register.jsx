@@ -159,8 +159,8 @@ const Register = () => {
             setError('');
             setLoading(true);
             await registerUser(formData);
-            setSuccess('Đăng ký thành công! Đang chuyển hướng...');
-            setTimeout(() => navigate('/'), 1500);
+            setSuccess('Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.');
+            setTimeout(() => navigate('/'), 3000);
         } catch (err) {
             if (err.code === 'auth/email-already-in-use') {
                 setError('Email này đã được sử dụng. Vui lòng dùng email khác.');
@@ -269,6 +269,19 @@ const Register = () => {
                                 options={genderOptions}
                             />
                         </div>
+                    </div>
+
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer', fontSize: '0.875rem', color: '#64748b' }}>
+                            <input
+                                type="checkbox"
+                                required
+                                style={{ marginTop: '0.25rem', cursor: 'pointer', width: '1.125rem', height: '1.125rem', accentColor: 'var(--primary)' }}
+                            />
+                            <span>
+                                Tôi đã đọc và đồng ý với <Link to="/privacy" target="_blank" style={{ color: 'var(--primary)', fontWeight: '700', textDecoration: 'none' }}>Chính sách bảo mật</Link> của HeartSpace.
+                            </span>
+                        </label>
                     </div>
 
                     <button type="submit" className="auth-button" disabled={loading}>

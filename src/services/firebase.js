@@ -30,7 +30,7 @@ const firebaseConfig = {
 };
 
 // Check if Firebase is configured
-const isFirebaseConfigured = firebaseConfig.apiKey && firebaseConfig.projectId;
+const isFirebaseConfigured = !!firebaseConfig.apiKey;
 
 let app, auth, db, googleProvider;
 
@@ -48,12 +48,34 @@ if (isFirebaseConfigured) {
 
 export { auth, db, googleProvider };
 
-// Custom Auth Functions
+// --- Auth Functions --- //
+
+import { 
+    sendEmailVerification, 
+    updateEmail, 
+    updatePassword, 
+    linkWithPopup, 
+    unlink, 
+    EmailAuthProvider,
+    reauthenticateWithCredential
+} from "firebase/auth";
+import { 
+    onSnapshot, 
+    addDoc, 
+    updateDoc, 
+    deleteDoc, 
+    orderBy, 
+    limit, 
+    increment,
+    serverTimestamp 
+} from "firebase/firestore";
+
 export const registerUser = async (userData) => {
+    if (!auth || !db) throw new Error("Firebase chưa được cấu hình.");
     const { id, email, password, dob, gender } = userData;
 
     // 1. Check if ID already exists
-    const idQuery = query(collection(db, "users"), where("username", "==", id));
+    const idQuery = query(collection(db, "users"), where("username", "==", id.trim().toLowerCase()));
     const idSnapshot = await getDocs(idQuery);
 
     if (!idSnapshot.empty) {
@@ -64,53 +86,54 @@ export const registerUser = async (userData) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // 3. Store additional data in Firestore
+    // 3. Send Verification Email
+    await sendEmailVerification(user);
+
+    // 4. Store additional data in Firestore
     await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
-        username: id,
+        username: id.trim().toLowerCase(),
         email: email,
         dob: dob,
         gender: gender,
-        createdAt: new Date().toISOString()
+        photoURL: user.photoURL || "",
+        createdAt: serverTimestamp()
     });
 
     return user;
 };
 
 export const loginWithId = async (idOrEmail, password) => {
-    const term = idOrEmail.trim();
+    if (!auth || !db) throw new Error("Firebase chưa được cấu hình.");
+    const term = idOrEmail.trim().toLowerCase();
 
-    // 1. Tìm thông tin người dùng qua ID (username)
-    let idQuery = query(collection(db, "users"), where("username", "==", term));
-    let snapshot = await getDocs(idQuery);
+    let email = term;
 
-    // 2. Nếu không thấy, thử tìm qua Email
-    if (snapshot.empty) {
-        idQuery = query(collection(db, "users"), where("email", "==", term));
-        snapshot = await getDocs(idQuery);
+    // Nếu không phải email, tìm qua username
+    if (!term.includes('@')) {
+        const idQuery = query(collection(db, "users"), where("username", "==", term));
+        const snapshot = await getDocs(idQuery);
+        
+        if (snapshot.empty) {
+            throw new Error("ID người dùng không tồn tại.");
+        }
+        
+        email = snapshot.docs[0].data().email;
     }
 
-    if (snapshot.empty) {
-        throw new Error("ID hoặc Email không tồn tại.");
-    }
-
-    const userData = snapshot.docs[0].data();
-    const email = userData.email;
-
-    // 3. Đăng nhập thực sự bằng Firebase Auth
+    // Đăng nhập bằng Email & Password
     return await signInWithEmailAndPassword(auth, email, password);
 };
 
 export const loginWithGoogle = async () => {
+    if (!auth || !googleProvider) throw new Error("Firebase chưa được cấu hình.");
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
 
-    // Check if profile exists, if not create a default one
     const docRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists()) {
-        // Generate a default username if it's a new Google user
         const defaultUsername = user.email.split('@')[0] + Math.floor(Math.random() * 1000);
         await setDoc(docRef, {
             uid: user.uid,
@@ -118,11 +141,105 @@ export const loginWithGoogle = async () => {
             email: user.email,
             dob: "",
             gender: "",
-            createdAt: new Date().toISOString()
+            photoURL: user.photoURL,
+            createdAt: serverTimestamp()
         });
     }
 
     return user;
+};
+
+// --- Account Management --- //
+
+export const updateProfileInfo = async (uid, data) => {
+    const docRef = doc(db, "users", uid);
+    if (data.username) data.username = data.username.toLowerCase();
+    await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+};
+
+export const linkGoogleAccount = async () => {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Bạn chưa đăng nhập.");
+    return await linkWithPopup(user, googleProvider);
+};
+
+export const unlinkGoogleAccount = async () => {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Bạn chưa đăng nhập.");
+    return await unlink(user, "google.com");
+};
+
+export const changeUserPassword = async (newPassword) => {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Bạn chưa đăng nhập.");
+    await updatePassword(user, newPassword);
+};
+
+export const changeUserEmail = async (newEmail) => {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Bạn chưa đăng nhập.");
+    await updateEmail(user, newEmail);
+    await updateDoc(doc(db, "users", user.uid), { email: newEmail });
+};
+
+// --- Community Real-time --- //
+
+export const subscribeToPosts = (callback) => {
+    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(50));
+    return onSnapshot(q, (snapshot) => {
+        const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        callback(posts);
+    });
+};
+
+export const createPost = async (postData) => {
+    return await addDoc(collection(db, "posts"), {
+        ...postData,
+        likes: 0,
+        commentCount: 0,
+        likedBy: [],
+        createdAt: serverTimestamp()
+    });
+};
+
+export const toggleLikePost = async (postId, uid) => {
+    const postRef = doc(db, "posts", postId);
+    const postSnap = await getDoc(postRef);
+    if (!postSnap.exists()) return;
+
+    const data = postSnap.data();
+    const likedBy = data.likedBy || [];
+    const isLiked = likedBy.includes(uid);
+
+    if (isLiked) {
+        await updateDoc(postRef, {
+            likes: increment(-1),
+            likedBy: likedBy.filter(id => id !== uid)
+        });
+    } else {
+        await updateDoc(postRef, {
+            likes: increment(1),
+            likedBy: [...likedBy, uid]
+        });
+    }
+};
+
+export const addComment = async (postId, commentData) => {
+    await addDoc(collection(db, "posts", postId, "comments"), {
+        ...commentData,
+        createdAt: serverTimestamp()
+    });
+    await updateDoc(doc(db, "posts", postId), {
+        commentCount: increment(1)
+    });
+};
+
+export const subscribeToComments = (postId, callback) => {
+    const q = query(collection(db, "posts", postId, "comments"), orderBy("createdAt", "asc"));
+    return onSnapshot(q, (snapshot) => {
+        const comments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        callback(comments);
+    });
 };
 
 export const logout = () => signOut(auth);

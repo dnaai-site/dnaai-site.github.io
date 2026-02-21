@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db, logout } from '../services/firebase';
 
 const AuthContext = createContext(null);
@@ -15,26 +15,44 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
             return;
         }
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+
+        let unsubProfile = null;
+
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+            if (unsubProfile) {
+                unsubProfile();
+                unsubProfile = null;
+            }
+
             if (firebaseUser) {
                 setUser(firebaseUser);
-                try {
-                    const docRef = doc(db, 'users', firebaseUser.uid);
-                    const docSnap = await getDoc(docRef);
+                const docRef = doc(db, 'users', firebaseUser.uid);
+
+                unsubProfile = onSnapshot(docRef, (docSnap) => {
                     if (docSnap.exists()) {
                         setUserProfile(docSnap.data());
+                    } else {
+                        setUserProfile({
+                            username: firebaseUser.email?.split('@')[0] || 'Người dùng',
+                            email: firebaseUser.email
+                        });
                     }
-                } catch (e) {
-                    console.warn('Firestore unavailable, using basic user info:', e);
-                    setUserProfile({ username: firebaseUser.email?.split('@')[0] || 'Người dùng', email: firebaseUser.email });
-                }
+                    setLoading(false);
+                }, (error) => {
+                    console.warn('Profile fetch error:', error);
+                    setLoading(false);
+                });
             } else {
                 setUser(null);
                 setUserProfile(null);
+                setLoading(false);
             }
-            setLoading(false);
         });
-        return () => unsubscribe();
+
+        return () => {
+            unsubscribe();
+            if (unsubProfile) unsubProfile();
+        };
     }, []);
 
     const handleLogout = async () => {
