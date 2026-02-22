@@ -3,30 +3,44 @@ import { Link } from 'react-router-dom';
 
 const Home = () => {
     return (
-        <div style={{ padding: '2rem 0' }}>
+        <div className="home-container" style={{ padding: '1rem 0' }}>
             {/* Hero Section */}
-            <section style={{ textAlign: 'center', marginBottom: '5rem' }}>
-                <span style={{
+            <section style={{ textAlign: 'center', marginBottom: '4rem' }}>
+                <span className="badge" style={{
                     display: 'inline-block',
                     padding: '0.375rem 1rem',
                     borderRadius: '999px',
                     background: '#ede9fe',
                     color: '#7c3aed',
-                    fontSize: '0.8125rem',
+                    fontSize: 'min(0.8125rem, 3.5vw)',
                     fontWeight: '700',
-                    marginBottom: '1.5rem',
+                    marginBottom: '1.25rem',
                     border: '1px solid #ddd6fe'
                 }}>
                     ✨ Khám phá thế giới nội tâm của bạn
                 </span>
-                <h1 className="hero-gradient-text" style={{ fontSize: '3.5rem', fontWeight: '800', lineHeight: '1.1', marginBottom: '1.5rem', letterSpacing: '-0.02em' }}>
+                <h1 className="hero-gradient-text" style={{
+                    fontSize: 'clamp(2rem, 8vw, 3.5rem)',
+                    fontWeight: '800',
+                    lineHeight: '1.2',
+                    marginBottom: '1.25rem',
+                    letterSpacing: '-0.02em'
+                }}>
                     Thấu hiểu bản thân,<br />Kiến tạo hạnh phúc.
                 </h1>
-                <p style={{ fontSize: '1.125rem', color: 'var(--text-light)', marginBottom: '2.5rem', maxWidth: '40rem', margin: '0 auto 2.5rem auto', lineHeight: '1.6' }}>
+                <p style={{
+                    fontSize: 'clamp(0.9375rem, 4vw, 1.125rem)',
+                    color: 'var(--text-light)',
+                    marginBottom: '2rem',
+                    maxWidth: '42rem',
+                    margin: '0 auto 2rem auto',
+                    lineHeight: '1.6',
+                    padding: '0 1rem'
+                }}>
                     HeartSpace là người bạn đồng hành AI giúp bạn vượt qua áp lực, thấu hiểu cảm xúc và tìm thấy sự bình yên trong tâm hồn.
                 </p>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-                    <Link to="/chatbot" className="btn btn-primary" style={{ padding: '0.875rem 2rem', fontSize: '1rem', textDecoration: 'none' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', padding: '0 1rem' }}>
+                    <Link to="/chatbot" className="btn btn-primary" style={{ padding: '0.875rem 2rem', fontSize: '1rem', textDecoration: 'none', minWidth: '200px' }}>
                         Bắt đầu ngay
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" style={{ marginLeft: '8px' }}>
                             <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -36,8 +50,8 @@ const Home = () => {
             </section>
 
             {/* Features Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-                <Link to="/chatbot" className="glass-card" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                <Link to="/chatbot" className="glass-card" style={{ textDecoration: 'none', color: 'inherit', padding: '1.5rem' }}>
                     <div className="tool-icon-wrapper">
                         <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />

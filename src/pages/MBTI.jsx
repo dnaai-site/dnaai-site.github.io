@@ -110,18 +110,18 @@ const MBTI = () => {
     };
 
     return (
-        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '2rem 0' }}>
-            <div className="glass-card overflow-hidden" style={{ minHeight: '600px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', width: '100%', padding: '1rem 0' }} className="mobile-padding-0">
+            <div className="glass-card overflow-hidden mbti-card" style={{ minHeight: '600px', display: 'flex', flexDirection: 'column', position: 'relative', padding: 0 }}>
 
                 {stage === 'welcome' && (
-                    <div style={{ padding: '4rem 3rem', textAlign: 'center' }} className="fade-in">
-                        <div style={{ fontSize: '5rem', marginBottom: '2rem' }}>🧩</div>
-                        <h2 className="hero-gradient-text" style={{ fontSize: '3rem', fontWeight: '900', marginBottom: '1.5rem', color: '#1e293b' }}>Khám Phá Tính Cách</h2>
-                        <p style={{ color: 'var(--text-light)', fontSize: '1.25rem', marginBottom: '3.5rem', lineHeight: '1.7', maxWidth: '600px', margin: '0 auto 3.5rem auto' }}>
+                    <div style={{ padding: 'clamp(2rem, 8vw, 4rem) clamp(1rem, 5vw, 3rem)', textAlign: 'center' }} className="fade-in">
+                        <div style={{ fontSize: 'clamp(3rem, 15vw, 5rem)', marginBottom: '1.5rem' }}>🧩</div>
+                        <h2 className="hero-gradient-text" style={{ fontSize: 'clamp(2rem, 8vw, 3rem)', fontWeight: '900', marginBottom: '1rem' }}>Khám Phá Tính Cách</h2>
+                        <p style={{ color: 'var(--text-light)', fontSize: 'clamp(1rem, 4vw, 1.25rem)', marginBottom: '2.5rem', lineHeight: '1.7', maxWidth: '600px', margin: '0 auto 2.5rem auto' }}>
                             Trắc nghiệm MBTI giúp bạn hiểu rõ thế giới nội tâm, cách bạn tiếp nhận thông tin và đưa ra quyết định trong cuộc sống.
                         </p>
-                        <button className="btn btn-primary" onClick={startTest} style={{ padding: '1.25rem 4rem', fontSize: '1.25rem' }}>Bắt đầu ngay</button>
-                        <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'center', gap: '2rem', color: '#94a3b8', fontSize: '1rem', fontWeight: '600' }}>
+                        <button className="btn btn-primary" onClick={startTest} style={{ padding: '1rem 3rem', fontSize: '1.125rem' }}>Bắt đầu ngay</button>
+                        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center', gap: 'clamp(1rem, 4vw, 2rem)', color: '#94a3b8', fontSize: '0.875rem', fontWeight: '800', flexWrap: 'wrap' }}>
                             <span>⏱️ 5-10 phút</span>
                             <span>📝 24 câu hỏi</span>
                             <span>✨ Chính xác cao</span>
@@ -131,27 +131,27 @@ const MBTI = () => {
 
                 {stage === 'quiz' && (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ height: '8px', background: '#f1f5f9', position: 'relative' }}>
-                            <div style={{ height: '100%', background: 'linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%)', width: `${(currentIndex / questions.length) * 100}%`, transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}></div>
+                        <div style={{ height: '6px', background: '#f1f5f9', position: 'relative' }}>
+                            <div style={{ height: '100%', background: 'linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%)', width: `${((currentIndex + 1) / questions.length) * 100}%`, transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}></div>
                         </div>
 
-                        <div style={{ padding: '4rem 3rem', flex: 1, display: 'flex', flexDirection: 'column' }} className="fade-in">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
-                                <button onClick={goBack} disabled={currentIndex === 0} style={{ background: 'none', border: 'none', color: currentIndex === 0 ? '#e2e8f0' : 'var(--primary)', fontWeight: '800', cursor: currentIndex === 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem' }}>
+                        <div style={{ padding: 'clamp(2rem, 8vw, 4rem) clamp(1rem, 5vw, 3rem)', flex: 1, display: 'flex', flexDirection: 'column' }} className="fade-in">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+                                <button onClick={goBack} disabled={currentIndex === 0} style={{ background: 'none', border: 'none', color: currentIndex === 0 ? '#e2e8f0' : 'var(--primary)', fontWeight: '800', cursor: currentIndex === 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
                                     ← Quay lại
                                 </button>
-                                <span style={{ fontSize: '0.9375rem', fontWeight: '800', color: '#94a3b8', letterSpacing: '0.1em' }}>CÂU HỎI {currentIndex + 1} / 24</span>
+                                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', letterSpacing: '0.1em' }}>CÂU HỎI {currentIndex + 1} / 24</span>
                             </div>
 
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-                                <h3 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '5rem', color: '#1e293b', lineHeight: '1.4', maxWidth: '700px' }}>{questions[currentIndex].text}</h3>
+                                <h3 style={{ fontSize: 'clamp(1.25rem, 5vw, 2rem)', fontWeight: '800', marginBottom: '3.5rem', color: '#1e293b', lineHeight: '1.4', maxWidth: '700px' }}>{questions[currentIndex].text}</h3>
 
                                 <div className="likert-container" style={{ width: '100%', maxWidth: '600px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', color: '#94a3b8', fontWeight: '800', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem', color: '#94a3b8', fontWeight: '800', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                         <span style={{ color: '#ef4444' }}>Không đồng ý</span>
                                         <span style={{ color: '#22c55e' }}>Rất đồng ý</span>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', padding: '0 0.5rem' }}>
                                         <div style={{ position: 'absolute', top: '50%', left: '0', right: '0', height: '2px', background: '#e2e8f0', zIndex: 0, transform: 'translateY(-50%)' }}></div>
                                         {[1, 2, 3, 4, 5].map(v => (
                                             <button
@@ -159,8 +159,8 @@ const MBTI = () => {
                                                 onClick={() => handleAnswer(v)}
                                                 className={`likert-btn v-${v}`}
                                                 style={{
-                                                    width: v === 3 ? '40px' : v === 1 || v === 5 ? '70px' : '55px',
-                                                    height: v === 3 ? '40px' : v === 1 || v === 5 ? '70px' : '55px',
+                                                    width: v === 3 ? 'clamp(30px, 8vw, 40px)' : v === 1 || v === 5 ? 'clamp(50px, 14vw, 70px)' : 'clamp(40px, 11vw, 55px)',
+                                                    height: v === 3 ? 'clamp(30px, 8vw, 40px)' : v === 1 || v === 5 ? 'clamp(50px, 14vw, 70px)' : 'clamp(40px, 11vw, 55px)',
                                                     borderRadius: '50%',
                                                     border: '4px solid white',
                                                     background: 'white',
@@ -191,51 +191,51 @@ const MBTI = () => {
                 )}
 
                 {stage === 'loading' && (
-                    <div style={{ padding: '6rem 4rem', textAlign: 'center' }} className="fade-in">
-                        <div className="loader-container" style={{ position: 'relative', width: '100px', height: '100px', margin: '0 auto 3rem auto' }}>
-                            <div className="loader-ring"></div>
-                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>🧠</div>
+                    <div style={{ padding: '6rem 2rem', textAlign: 'center' }} className="fade-in">
+                        <div className="loader-container" style={{ position: 'relative', width: '80px', height: '80px', margin: '0 auto 2.5rem auto' }}>
+                            <div className="loader-ring" style={{ width: '80px', height: '80px' }}></div>
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>🧠</div>
                         </div>
-                        <h3 style={{ fontSize: '2rem', fontWeight: '900', color: '#1e293b', marginBottom: '1rem' }}>Đang giải mã tính cách...</h3>
-                        <p style={{ color: 'var(--text-light)', fontSize: '1.125rem' }}>AI đang phân tích các phản hồi của bạn để tìm ra nhóm hạt nhân phù hợp.</p>
+                        <h3 style={{ fontSize: '1.75rem', fontWeight: '900', color: '#1e293b', marginBottom: '1rem' }}>Đang giải mã...</h3>
+                        <p style={{ color: 'var(--text-light)', fontSize: '1rem' }}>AI đang phân tích các phản hồi của bạn.</p>
                     </div>
                 )}
 
                 {stage === 'result' && result && (
-                    <div style={{ padding: '4rem' }} className="fade-in">
-                        <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-                            <span style={{ textTransform: 'uppercase', fontSize: '1rem', fontWeight: '800', color: 'var(--primary)', letterSpacing: '0.2em' }}>NHÓM TÍNH CÁCH CỦA BẠN</span>
-                            <h2 style={{ fontSize: '7rem', fontWeight: '900', background: 'linear-gradient(135deg, var(--primary) 0%, #6366f1 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', lineHeight: '1.2', margin: '0.5rem 0' }}>{result.type}</h2>
-                            <h3 style={{ fontSize: '2.5rem', fontWeight: '800', color: '#1e293b' }}>{result.title}</h3>
+                    <div style={{ padding: 'clamp(2rem, 8vw, 4rem) clamp(1rem, 5vw, 3rem)' }} className="fade-in result-page">
+                        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                            <span style={{ textTransform: 'uppercase', fontSize: '0.875rem', fontWeight: '800', color: 'var(--primary)', letterSpacing: '0.2em' }}>NHÓM TÍNH CÁCH CỦA BẠN</span>
+                            <h2 style={{ fontSize: 'clamp(4rem, 15vw, 7rem)', fontWeight: '900', background: 'linear-gradient(135deg, var(--primary) 0%, #6366f1 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', lineHeight: '1.1', margin: '0.5rem 0' }}>{result.type}</h2>
+                            <h3 style={{ fontSize: 'clamp(1.5rem, 6vw, 2.5rem)', fontWeight: '800', color: '#1e293b' }}>{result.title}</h3>
                         </div>
 
-                        <div style={{ background: 'white', border: '1px solid #f1f5f9', padding: '2.5rem', borderRadius: '2rem', marginBottom: '3rem', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
-                            <p style={{ fontSize: '1.25rem', lineHeight: '1.9', color: '#475569', textAlign: 'center' }}>"{result.desc}"</p>
+                        <div style={{ background: 'white', border: '1px solid #f1f5f9', padding: '1.5rem', borderRadius: '1.5rem', marginBottom: '2.5rem', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+                            <p style={{ fontSize: 'clamp(1rem, 4vw, 1.125rem)', lineHeight: '1.8', color: '#475569', textAlign: 'center' }}>"{result.desc}"</p>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem', marginBottom: '4rem' }}>
-                            <div style={{ background: '#f0fdf4', padding: '2rem', borderRadius: '1.5rem', border: '1px solid #dcfce7' }}>
-                                <h4 style={{ fontWeight: '900', color: '#16a34a', marginBottom: '1.25rem', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>💪 Thế mạnh</h4>
-                                <ul style={{ listStyle: 'none', padding: 0, color: '#166534', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontWeight: '600' }}>
+                        <div className="res-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+                            <div style={{ background: '#f0fdf4', padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid #dcfce7' }}>
+                                <h4 style={{ fontWeight: '900', color: '#16a34a', marginBottom: '1rem', fontSize: '1.125rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>💪 Thế mạnh</h4>
+                                <ul style={{ listStyle: 'none', padding: 0, color: '#166534', display: 'flex', flexDirection: 'column', gap: '0.625rem', fontWeight: '600', fontSize: '0.9375rem' }}>
                                     {result.strengths.map((s, i) => <li key={i}>✨ {s}</li>)}
                                 </ul>
                             </div>
-                            <div style={{ background: '#fef2f2', padding: '2rem', borderRadius: '1.5rem', border: '1px solid #fee2e2' }}>
-                                <h4 style={{ fontWeight: '900', color: '#dc2626', marginBottom: '1.25rem', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>⚠️ Cần cải thiện</h4>
-                                <ul style={{ listStyle: 'none', padding: 0, color: '#991b1b', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontWeight: '600' }}>
+                            <div style={{ background: '#fef2f2', padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid #fee2e2' }}>
+                                <h4 style={{ fontWeight: '900', color: '#dc2626', marginBottom: '1rem', fontSize: '1.125rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>⚠️ Cần cải thiện</h4>
+                                <ul style={{ listStyle: 'none', padding: 0, color: '#991b1b', display: 'flex', flexDirection: 'column', gap: '0.625rem', fontWeight: '600', fontSize: '0.9375rem' }}>
                                     {result.weaknesses.map((w, i) => <li key={i}>🎯 {w}</li>)}
                                 </ul>
                             </div>
                         </div>
 
-                        <div style={{ background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', padding: '2.5rem', borderRadius: '2rem', textAlign: 'center', marginBottom: '4rem' }}>
-                            <h4 style={{ fontWeight: '800', color: 'var(--primary)', marginBottom: '1rem', fontSize: '1.25rem' }}>🤝 Mức độ tương thích</h4>
-                            <p style={{ fontSize: '1.125rem', color: '#6d28d9', fontWeight: '700' }}>Bạn sẽ hòa hợp nhất với các nhóm: <span style={{ background: 'white', padding: '0.4rem 1rem', borderRadius: '999px', marginLeft: '0.5rem', boxShadow: '0 4px 10px rgba(139, 92, 246, 0.1)' }}>{result.compatibility}</span></p>
+                        <div style={{ background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', padding: '1.75rem', borderRadius: '1.5rem', textAlign: 'center', marginBottom: '3.5rem' }}>
+                            <h4 style={{ fontWeight: '800', color: 'var(--primary)', marginBottom: '0.75rem', fontSize: '1.125rem' }}>🤝 Mức độ tương thích</h4>
+                            <p style={{ fontSize: '1rem', color: '#6d28d9', fontWeight: '700' }}>Tương thích với: <span style={{ background: 'white', padding: '0.25rem 0.875rem', borderRadius: '999px', marginLeft: '0.375rem', boxShadow: '0 4px 10px rgba(139, 92, 246, 0.1)', display: 'inline-block' }}>{result.compatibility}</span></p>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
-                            <button className="btn btn-primary" onClick={() => { setStage('welcome'); setAnswers({}); setCurrentIndex(0); }} style={{ padding: '1rem 3rem' }}>Làm lại bài test</button>
-                            <Link to="/career" className="btn" style={{ background: 'white', border: '2px solid #e2e8f0', color: '#64748b', textDecoration: 'none', padding: '1rem 3rem' }}>Xem hướng nghiệp →</Link>
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                            <button className="btn btn-primary" onClick={() => { setStage('welcome'); setAnswers({}); setCurrentIndex(0); }} style={{ padding: '0.875rem 2rem' }}>Làm lại</button>
+                            <Link to="/career" className="btn" style={{ background: 'white', border: '2px solid #e2e8f0', color: '#64748b', textDecoration: 'none', padding: '0.875rem 2rem' }}>Hướng nghiệp →</Link>
                         </div>
                     </div>
                 )}
@@ -243,20 +243,23 @@ const MBTI = () => {
 
             <style>{`
                 .loader-ring {
-                    border: 8px solid #f3f3f3;
-                    border-top: 8px solid var(--primary);
+                    border: 6px solid #f3f3f3;
+                    border-top: 6px solid var(--primary);
                     border-radius: 50%;
-                    width: 100px;
-                    height: 100px;
+                    width: 70px;
+                    height: 70px;
                     animation: spin 1.5s linear infinite;
                 }
                 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
                 
                 .likert-btn:hover {
-                    transform: scale(1.15) translateY(-5px);
-                    box-shadow: 0 10px 25px rgba(139, 92, 246, 0.15);
+                    transform: scale(1.1) translateY(-3px);
                 }
                 .likert-btn:active { transform: scale(0.95); }
+
+                @media (max-width: 768px) {
+                    .mbti-card { border-radius: 0; border: none; }
+                }
             `}</style>
         </div>
     );

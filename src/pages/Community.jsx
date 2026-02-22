@@ -120,18 +120,18 @@ const Community = () => {
     const getColor = (initial) => colors[initial.charCodeAt(0) % colors.length];
 
     return (
-        <div style={{ maxWidth: '720px', margin: '0 auto', padding: '2rem 0' }}>
-            <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-                <h2 className="hero-gradient-text" style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '0.75rem' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', width: '100%', padding: '1rem 0' }} className="community-container">
+            <div style={{ textAlign: 'center', marginBottom: '2.5rem', padding: '0 1rem' }}>
+                <h2 className="hero-gradient-text" style={{ fontSize: 'clamp(1.75rem, 6vw, 2.5rem)', fontWeight: '800', marginBottom: '0.75rem' }}>
                     Cộng Đồng Chia Sẻ
                 </h2>
-                <p style={{ fontSize: '1.0625rem', color: 'var(--text-light)', lineHeight: '1.6' }}>
+                <p style={{ fontSize: 'clamp(0.9375rem, 3.5vw, 1.0625rem)', color: 'var(--text-light)', lineHeight: '1.6' }}>
                     Nơi bạn có thể chia sẻ cảm xúc và nhận sự đồng cảm từ cộng đồng.
                 </p>
             </div>
 
             {/* Write Post Button / Form */}
-            <div className="glass-card" style={{ marginBottom: '2rem', padding: '1.75rem' }}>
+            <div className="glass-card" style={{ marginBottom: '2rem' }}>
                 {!showForm ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{ width: '2.75rem', height: '2.75rem', background: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '800', fontSize: '1.125rem', flexShrink: 0 }}>
@@ -195,7 +195,7 @@ const Community = () => {
                     </div>
                 )}
                 {posts.map((post) => (
-                    <div key={post.id} className="glass-card" style={{ padding: '1.75rem' }}>
+                    <div key={post.id} className="glass-card">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: '1.25rem' }}>
                             <div style={{ width: '2.75rem', height: '2.75rem', background: getColor(post.initial || 'A'), color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '1.125rem', flexShrink: 0 }}>
                                 {post.initial}
