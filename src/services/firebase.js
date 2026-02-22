@@ -6,7 +6,8 @@ import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    updateProfile as updateAuthProfile
 } from "firebase/auth";
 import {
     getFirestore,
@@ -18,6 +19,7 @@ import {
     where,
     getDocs
 } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 // TODO: Replace with your actual Firebase configuration
 const firebaseConfig = {
@@ -32,47 +34,49 @@ const firebaseConfig = {
 // Check if Firebase is configured
 const isFirebaseConfigured = !!firebaseConfig.apiKey;
 
-let app, auth, db, googleProvider;
+let app, auth, db, storage, googleProvider;
 
 if (isFirebaseConfigured) {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
+    storage = getStorage(app);
     googleProvider = new GoogleAuthProvider();
 } else {
     console.warn('⚠️ Firebase chưa được cấu hình. Tính năng đăng nhập sẽ không hoạt động. Vui lòng thêm VITE_FIREBASE_* vào file .env');
     auth = null;
     db = null;
+    storage = null;
     googleProvider = null;
 }
 
-export { auth, db, googleProvider };
+export { auth, db, storage, googleProvider };
 
 // --- Auth Functions --- //
 
-import { 
-    sendEmailVerification, 
-    updateEmail, 
-    updatePassword, 
-    linkWithPopup, 
-    unlink, 
+import {
+    sendEmailVerification,
+    updateEmail,
+    updatePassword,
+    linkWithPopup,
+    unlink,
     EmailAuthProvider,
     reauthenticateWithCredential
 } from "firebase/auth";
-import { 
-    onSnapshot, 
-    addDoc, 
-    updateDoc, 
-    deleteDoc, 
-    orderBy, 
-    limit, 
+import {
+    onSnapshot,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    orderBy,
+    limit,
     increment,
-    serverTimestamp 
+    serverTimestamp
 } from "firebase/firestore";
 
 export const registerUser = async (userData) => {
     if (!auth || !db) throw new Error("Firebase chưa được cấu hình.");
-    const { id, email, password, dob, gender } = userData;
+    const { id, email, password, dob, gender, avatarFile } = userData;
 
     // 1. Check if ID already exists
     const idQuery = query(collection(db, "users"), where("username", "==", id.trim().toLowerCase()));
@@ -86,17 +90,28 @@ export const registerUser = async (userData) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // 3. Send Verification Email
-    await sendEmailVerification(user);
+    // 3. Upload Avatar if present
+    let photoURL = "";
+    if (avatarFile) {
+        const storageRef = ref(storage, `avatars/${user.uid}`);
+        await uploadBytes(storageRef, avatarFile);
+        photoURL = await getDownloadURL(storageRef);
 
-    // 4. Store additional data in Firestore
+        // Cập nhật profile auth
+        await updateAuthProfile(user, { photoURL });
+    }
+
+    // 4. Send Verification Email (optional, user might want to skip for now)
+    // await sendEmailVerification(user);
+
+    // 5. Store additional data in Firestore
     await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         username: id.trim().toLowerCase(),
         email: email,
         dob: dob,
         gender: gender,
-        photoURL: user.photoURL || "",
+        photoURL: photoURL,
         createdAt: serverTimestamp()
     });
 
@@ -113,11 +128,11 @@ export const loginWithId = async (idOrEmail, password) => {
     if (!term.includes('@')) {
         const idQuery = query(collection(db, "users"), where("username", "==", term));
         const snapshot = await getDocs(idQuery);
-        
+
         if (snapshot.empty) {
             throw new Error("ID người dùng không tồn tại.");
         }
-        
+
         email = snapshot.docs[0].data().email;
     }
 

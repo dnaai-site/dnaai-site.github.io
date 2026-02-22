@@ -124,6 +124,8 @@ const Register = () => {
         dob: '',
         gender: 'other'
     });
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [avatarPreview, setAvatarPreview] = useState(null);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
@@ -137,6 +139,18 @@ const Register = () => {
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setAvatarFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAvatarPreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     const validateId = (id) => {
@@ -154,13 +168,14 @@ const Register = () => {
         if (formData.password.length < 6) { setError('Mật khẩu phải có ít nhất 6 ký tự.'); return; }
         if (formData.password !== formData.confirmPassword) { setError('Mật khẩu xác nhận không khớp.'); return; }
         if (!formData.dob) { setError('Vui lòng nhập ngày sinh.'); return; }
+        if (!avatarFile) { setError('Vui lòng tải lên ảnh đại diện.'); return; }
 
         try {
             setError('');
             setLoading(true);
-            await registerUser(formData);
-            setSuccess('Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.');
-            setTimeout(() => navigate('/'), 3000);
+            await registerUser({ ...formData, avatarFile });
+            setSuccess('Đăng ký thành công! Đang chuyển hướng...');
+            setTimeout(() => navigate('/'), 2000);
         } catch (err) {
             if (err.code === 'auth/email-already-in-use') {
                 setError('Email này đã được sử dụng. Vui lòng dùng email khác.');
@@ -188,6 +203,47 @@ const Register = () => {
                 {success && <div className="auth-success">✅ {success}</div>}
 
                 <form onSubmit={handleRegister} className="auth-form">
+                    <div className="avatar-upload-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem' }}>
+                        <div
+                            style={{
+                                width: '100px',
+                                height: '100px',
+                                borderRadius: '50%',
+                                border: '3px dashed #e2e8f0',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                overflow: 'hidden',
+                                position: 'relative',
+                                background: '#f8fafc',
+                                transition: 'all 0.3s ease',
+                                cursor: 'pointer'
+                            }}
+                            onClick={() => document.getElementById('avatar-input').click()}
+                            onMouseOver={(e) => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.background = '#f5f3ff'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
+                        >
+                            {avatarPreview ? (
+                                <img src={avatarPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                                <div style={{ textAlign: 'center', color: '#94a3b8' }}>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" />
+                                    </svg>
+                                    <div style={{ fontSize: '0.7rem', marginTop: '4px' }}>Ảnh đại diện</div>
+                                </div>
+                            )}
+                        </div>
+                        <input
+                            type="file"
+                            id="avatar-input"
+                            hidden
+                            accept="image/*"
+                            onChange={handleFileChange}
+                        />
+                        <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '8px' }}>Tải lên ảnh nhận dạng (bắt buộc)</p>
+                    </div>
+
                     <div className="form-group">
                         <label htmlFor="reg-id">ID Người dùng <span style={{ color: '#ef4444' }}>*</span></label>
                         <input

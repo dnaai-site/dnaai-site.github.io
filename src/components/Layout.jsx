@@ -49,8 +49,12 @@ const Layout = ({ children }) => {
                                 className="user-avatar-btn"
                                 onClick={() => setShowDropdown(!showDropdown)}
                             >
-                                <div className="user-avatar">
-                                    {(userProfile?.username || user.email || 'U')[0].toUpperCase()}
+                                <div className="user-avatar" style={{ background: userProfile?.photoURL ? 'none' : 'var(--primary)', overflow: 'hidden' }}>
+                                    {userProfile?.photoURL ? (
+                                        <img src={userProfile.photoURL} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        (userProfile?.username || user.email || 'U')[0].toUpperCase()
+                                    )}
                                 </div>
                                 <span className="user-name">{userProfile?.username || 'Người dùng'}</span>
                                 <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
@@ -60,8 +64,12 @@ const Layout = ({ children }) => {
                             {showDropdown && (
                                 <div className="dropdown-menu">
                                     <div className="dropdown-header">
-                                        <div className="dropdown-avatar">
-                                            {(userProfile?.username || user.email || 'U')[0].toUpperCase()}
+                                        <div className="dropdown-avatar" style={{ background: userProfile?.photoURL ? 'none' : 'var(--primary)', overflow: 'hidden' }}>
+                                            {userProfile?.photoURL ? (
+                                                <img src={userProfile.photoURL} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ) : (
+                                                (userProfile?.username || user.email || 'U')[0].toUpperCase()
+                                            )}
                                         </div>
                                         <div>
                                             <div style={{ fontWeight: '800', color: '#1e293b', fontSize: '0.9375rem' }}>{userProfile?.username || 'Người dùng'}</div>
