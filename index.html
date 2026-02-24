@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="HeartSpace - Người bạn đồng hành AI giúp chăm sóc sức khỏe tinh thần cho học sinh." />
+  <title>HeartSpace by DNA AI</title>
+
+  <!-- Preconnect để DNS resolve sớm -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://apis.google.com" crossorigin />
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+  <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com" />
+
+  <!-- Font: dùng display=swap để không block render -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap"
+    rel="stylesheet"
+    media="print"
+    onload="this.media='all'"
+  />
+  <!-- Fallback nếu JS bị tắt -->
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  </noscript>
+
+  <!-- Inline loading skeleton để hiện ngay, không chờ JS -->
+  <style>
+    body { margin: 0; background: #f5f3ff; font-family: system-ui, -apple-system, sans-serif; }
+    #root:empty::before {
+      content: '';
+      display: block;
+      position: fixed;
+      inset: 0;
+      display: flex;
+    }
+    .hs-init-loader {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      background: #f5f3ff;
+      z-index: 9999;
+      transition: opacity 0.3s ease;
+    }
+    .hs-init-loader svg { width: 48px; height: 48px; }
+    .hs-init-loader .spin {
+      width: 32px; height: 32px;
+      border: 3px solid rgba(139,92,246,0.2);
+      border-top-color: #8b5cf6;
+      border-radius: 50%;
+      animation: hs-spin 0.7s linear infinite;
+    }
+    @keyframes hs-spin { to { transform: rotate(360deg); } }
+    .hs-init-loader p { color: #64748b; font-size: 14px; margin: 0; }
+  </style>
+</head>
+
+<body>
+  <!-- Loader hiện ngay trước khi JS bundle load xong -->
+  <div class="hs-init-loader" id="hs-init-loader">
+    <svg viewBox="0 0 40 40" fill="none">
+      <rect width="40" height="40" rx="10" fill="#8b5cf6"/>
+      <path d="M20 8c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12S26.627 8 20 8zm0 2c5.514 0 10 4.486 10 10s-4.486 10-10 10S10 25.514 10 20 14.486 10 20 10zm-1 4v7l6 3.5-1 1.732-7-4V14h2z" fill="white"/>
+    </svg>
+    <div class="spin"></div>
+    <p>Đang khởi động HeartSpace...</p>
+  </div>
+
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+
+  <script>
+    // Ẩn loader khi React đã render xong
+    window.__hideInitLoader = function() {
+      var el = document.getElementById('hs-init-loader');
+      if (el) { el.style.opacity = '0'; setTimeout(function(){ el.remove(); }, 300); }
+    };
+  </script>
+</body>
+
+</html>
