@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { saveTestResult } from '../services/firebase';
 
 const questions = [
     // E vs I (Extraversion vs Introversion)
@@ -52,6 +54,7 @@ const types = {
 };
 
 const MBTI = () => {
+    const { user } = useAuth();
     const [stage, setStage] = useState('welcome'); // welcome, quiz, loading, result
     const [currentIndex, setCurrentIndex] = useState(0);
     const [answers, setAnswers] = useState({});
@@ -76,7 +79,7 @@ const MBTI = () => {
         if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
     };
 
-    const calculateResult = (finalAnswers) => {
+    const calculateResult = async (finalAnswers) => {
         let scores = { E: 0, I: 0, N: 0, S: 0, T: 0, F: 0, J: 0, P: 0 };
 
         questions.forEach(q => {
@@ -105,8 +108,18 @@ const MBTI = () => {
         type += scores.T >= scores.F ? "T" : "F";
         type += scores.J >= scores.P ? "J" : "P";
 
-        setResult({ type, ...types[type], scores });
+        const mbtiResult = { type, ...types[type], scores };
+        setResult(mbtiResult);
         setStage('result');
+
+        // Save result
+        if (user) {
+            await saveTestResult(user.uid, {
+                type: 'MBTI',
+                title: `${type} - ${types[type].title}`,
+                result: type
+            });
+        }
     };
 
     return (

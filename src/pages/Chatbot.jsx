@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getGeminiResponse } from '../services/gemini';
+import { useAuth } from '../context/AuthContext';
 
 const suggestions = [
     { label: 'Cảm thấy stress', text: 'Mình đang cảm thấy rất stress về việc học tập, bạn có thể giúp mình không?' },
@@ -9,16 +10,34 @@ const suggestions = [
 ];
 
 const Chatbot = () => {
-    const [messages, setMessages] = useState([
-        { role: 'ai', text: 'Chào bạn, mình là người bạn đồng hành AI của HeartSpace. Hôm nay bạn cảm thấy thế nào? Hãy chia sẻ với mình bất cứ điều gì đang làm bạn bận lòng nhé.' }
-    ]);
+    const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
+    const { user } = useAuth();
     const messagesEndRef = useRef(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
+
+    useEffect(() => {
+        const loadHistory = async () => {
+            if (user && !isHistoryLoaded) {
+                const { getAIChatHistory } = await import('../services/firebase');
+                const history = await getAIChatHistory(user.uid);
+                if (history.length > 0) {
+                    setMessages(history);
+                } else {
+                    setMessages([
+                        { role: 'ai', text: 'Chào bạn, mình là HeartAI - người bạn đồng hành AI của HeartSpace. Hôm nay bạn cảm thấy thế nào? Hãy chia sẻ với mình bất cứ điều gì đang làm bạn bận lòng nhé.' }
+                    ]);
+                }
+                setIsHistoryLoaded(true);
+            }
+        };
+        loadHistory();
+    }, [user, isHistoryLoaded]);
 
     useEffect(() => {
         scrollToBottom();
@@ -32,9 +51,19 @@ const Chatbot = () => {
         setIsLoading(true);
 
         try {
-            const history = messages.slice(-10);
-            const aiResponseText = await getGeminiResponse(text, history);
-            setMessages(prev => [...prev, { role: 'ai', text: aiResponseText }]);
+            const { saveAIChatMessage } = await import('../services/firebase');
+
+            // Lưu tin nhắn user
+            if (user) await saveAIChatMessage(user.uid, userMessage);
+
+            const historyForAI = messages.slice(-10);
+            const aiResponseText = await getGeminiResponse(text, historyForAI);
+            const aiMessage = { role: 'ai', text: aiResponseText };
+
+            setMessages(prev => [...prev, aiMessage]);
+
+            // Lưu tin nhắn AI
+            if (user) await saveAIChatMessage(user.uid, aiMessage);
         } catch (error) {
             console.error("Chat Error:", error);
             setMessages(prev => [...prev, { role: 'ai', text: "Mình hơi bối rối một chút, bạn có thể nói lại được không? Hoặc thử kiểm tra kết nối mạng nhé." }]);
@@ -67,7 +96,7 @@ const Chatbot = () => {
                 <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'white' }}>
                     <div style={{ width: '2.5rem', height: '2.5rem', background: 'var(--primary)', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', boxShadow: '0 8px 16px -4px rgba(139, 92, 246, 0.4)', flexShrink: 0 }}>✨</div>
                     <div style={{ flex: 1 }}>
-                        <h3 style={{ fontSize: '1.125rem', fontWeight: '800', background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.125rem' }}>Trợ Lý Tâm Hồn AI</h3>
+                        <h3 style={{ fontSize: '1.125rem', fontWeight: '800', background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.125rem' }}>HeartAI</h3>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                             <span style={{ width: '6px', height: '6px', background: '#22c55e', borderRadius: '50%' }}></span>
                             <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600' }}>Sẵn sàng lắng nghe bạn</span>

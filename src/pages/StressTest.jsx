@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { saveTestResult } from '../services/firebase';
 
 const questions = [
     "Bạn có thường xuyên cảm thấy mệt mỏi ngay cả khi mới ngủ dậy không?",
@@ -12,16 +14,33 @@ const questions = [
 ];
 
 const StressTest = () => {
+    const { user } = useAuth();
     const [stage, setStage] = useState('welcome'); // welcome, quiz, result
     const [currentIndex, setCurrentIndex] = useState(0);
     const [score, setScore] = useState(0);
 
-    const handleAnswer = (val) => {
-        setScore(prev => prev + val);
+    const handleAnswer = async (val) => {
+        const newScore = score + val;
+        setScore(newScore);
+
         if (currentIndex < questions.length - 1) {
             setCurrentIndex(prev => prev + 1);
         } else {
             setStage('result');
+            // Save result if logged in
+            if (user) {
+                const avg = newScore / questions.length;
+                let title = "Tinh thần ổn định ✨";
+                if (avg >= 2.2) title = "Trái tim đang mệt nhoài 🆘";
+                else if (avg >= 1.2) title = "Có chút áp lực ⚠️";
+
+                await saveTestResult(user.uid, {
+                    type: 'Stress',
+                    title: title,
+                    score: newScore,
+                    maxScore: questions.length * 3
+                });
+            }
         }
     };
 

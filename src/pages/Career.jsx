@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getGeminiResponse } from '../services/gemini';
+import { useAuth } from '../context/AuthContext';
+import { saveTestResult } from '../services/firebase';
 
 const careerCategories = [
     { emoji: '🎨', label: 'Sáng tạo & Nghệ thuật', value: 'creative' },
@@ -14,6 +16,7 @@ const careerCategories = [
 ];
 
 const Career = () => {
+    const { user } = useAuth();
     const [step, setStep] = useState(0); // 0: intro, 1: quiz, 2: result
     const [answers, setAnswers] = useState({ categories: [], strength: '', value: '', workStyle: '' });
     const [result, setResult] = useState('');
@@ -42,9 +45,24 @@ const Career = () => {
 
 Hãy đề xuất 3 ngành nghề phù hợp nhất, mỗi ngành gồm: tên nghề, lý do phù hợp, kỹ năng cần phát triển, và cơ hội việc làm tại Việt Nam. Trình bày rõ ràng, thân thiện, sử dụng emoji.`;
 
-        const response = await getGeminiResponse(prompt, []);
-        setResult(response);
-        setLoading(false);
+        try {
+            const response = await getGeminiResponse(prompt, []);
+            setResult(response);
+
+            // Save result
+            if (user) {
+                await saveTestResult(user.uid, {
+                    type: 'Career',
+                    title: `Tư vấn: ${selectedLabels.substring(0, 30)}...`,
+                    result: response
+                });
+            }
+        } catch (err) {
+            console.error(err);
+            setResult('Có lỗi xảy ra khi kết nối với AI. Vui lòng thử lại sau.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (

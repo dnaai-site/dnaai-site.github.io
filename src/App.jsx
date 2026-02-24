@@ -16,6 +16,9 @@ import Register from './pages/Register';
 
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Settings from './pages/Settings';
+import Messages from './pages/Messages';
+import Admin from './pages/Admin';
+import Support from './pages/Support';
 
 function App() {
   return (
@@ -31,6 +34,10 @@ function App() {
             <Route path="/career" element={<Career />} />
             <Route path="/library" element={<Library />} />
             <Route path="/community" element={<Community />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/messages/:userId" element={<Messages />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/support" element={<Support />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/settings" element={<Settings />} />

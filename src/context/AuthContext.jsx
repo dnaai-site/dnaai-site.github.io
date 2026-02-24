@@ -41,23 +41,30 @@ export const AuthProvider = ({ children }) => {
                 // Load profile không block UI
                 try {
                     if (db) {
+                        const { getUserRole } = await import('../services/firebase');
                         const docSnap = await getDoc(doc(db, 'users', firebaseUser.uid));
                         if (docSnap.exists()) {
-                            setUserProfile(docSnap.data());
+                            const data = docSnap.data();
+                            // Luôn ưu tiên logic role từ email để đảm bảo admin/dev không bị mất quyền
+                            const dynamicRole = getUserRole(firebaseUser.email);
+                            setUserProfile({ ...data, role: dynamicRole || data.role });
                         } else {
                             setUserProfile({
                                 username: firebaseUser.email?.split('@')[0] || 'Người dùng',
                                 email: firebaseUser.email,
-                                photoURL: firebaseUser.photoURL || ''
+                                photoURL: firebaseUser.photoURL || '',
+                                role: getUserRole(firebaseUser.email)
                             });
                         }
                     }
                 } catch (error) {
                     console.warn('Profile fetch error:', error);
+                    const { getUserRole } = await import('../services/firebase');
                     setUserProfile({
                         username: firebaseUser.email?.split('@')[0] || 'Người dùng',
                         email: firebaseUser.email,
-                        photoURL: firebaseUser.photoURL || ''
+                        photoURL: firebaseUser.photoURL || '',
+                        role: getUserRole(firebaseUser.email)
                     });
                 }
             } else {
