@@ -1,0 +1,5 @@
+{
+  "artifactType": "ARTIFACT_TYPE_IMPLEMENTATION_PLAN",
+  "summary": "Implementation plan for HeartSpace Community using Firebase Realtime Database and Gemini AI. Includes migration of community features from Firestore to RTDB, realtime auth profile syncing, and Threads-style UI enhancements.",
+  "updatedAt": "2026-02-25T14:28:00.127546500Z"
+}

@@ -1,396 +1,269 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
-import {
-    subscribeToPosts,
-    createPost,
-    toggleLikePost,
-    addComment,
-    subscribeToComments
-} from '../services/firebase';
-import { db } from '../services/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-
-const CommentSection = ({ postId, user, userProfile }) => {
-    const [comments, setComments] = useState([]);
-    const [newComment, setNewComment] = useState('');
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        const unsubscribe = subscribeToComments(postId, (data) => {
-            setComments(data);
-        });
-        return () => unsubscribe();
-    }, [postId]);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const textToPost = newComment.trim();
-        if (!textToPost || !user) return;
-        setLoading(true);
-        try {
-            const commentRef = await addComment(postId, {
-                text: textToPost,
-                authorId: user.uid,
-                authorName: userProfile?.username || user.email?.split('@')[0] || 'Người dùng'
-            });
-
-            // AI Logic for Comment
-            const lowerText = textToPost.toLowerCase();
-            const isTagged = lowerText.includes('@ai') || lowerText.includes('@heartai');
-
-            if (isTagged || textToPost.length > 10) {
-                const { getGeminiResponse } = await import('../services/gemini');
-                const aiPrompt = isTagged
-                    ? `Người dùng vừa nhắc đến bạn trong bình luận: "${textToPost}". Hãy trả lời họ.`
-                    : `Phân tích bình luận này: "${textToPost}". Nếu bình luận này mang tính tiêu cực, buồn bã hoặc cần sự đồng cảm, hãy viết một phản hồi ngắn gọn (dưới 50 từ) để an ủi họ. Nếu không cần thiết, hãy trả lời chính xác từ "NONE".`;
-
-                const aiResponse = await getGeminiResponse(aiPrompt);
-                if (aiResponse && aiResponse.trim() !== "NONE") {
-                    await addComment(postId, {
-                        text: aiResponse,
-                        authorId: 'ai-bot',
-                        authorName: 'HeartAI ✨',
-                        isAI: true
-                    });
-                }
-            }
-
-            setNewComment('');
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div style={{ marginTop: '1.5rem', background: '#f8fafc', borderRadius: '0.75rem', padding: '1rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
-                {comments.length === 0 && (
-                    <div style={{ fontSize: '0.8125rem', color: '#94a3b8', textAlign: 'center', padding: '0.5rem' }}>Chưa có bình luận nào.</div>
-                )}
-                {comments.map(c => (
-                    <div key={c.id} style={{ fontSize: '0.875rem', color: '#475569', display: 'flex', gap: '0.5rem', background: c.isAI ? 'rgba(139, 92, 246, 0.05)' : 'transparent', padding: c.isAI ? '0.5rem' : '0', borderRadius: '0.5rem' }}>
-                        <div style={{ width: '1.75rem', height: '1.75rem', background: c.isAI ? 'var(--primary)' : 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '800', fontSize: '0.6875rem', flexShrink: 0 }}>
-                            {c.isAI ? '✨' : (c.authorName || 'A')[0].toUpperCase()}
-                        </div>
-                        <div>
-                            <span style={{ fontWeight: '700', color: c.isAI ? 'var(--primary)' : '#1e293b', marginRight: '0.375rem' }}>{c.authorName || 'Ẩn danh'}:</span>
-                            {c.text}
-                        </div>
-                    </div>
-                ))}
-            </div>
-            {user ? (
-                <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <input
-                        type="text"
-                        value={newComment}
-                        onChange={e => setNewComment(e.target.value)}
-                        placeholder="Viết bình luận..."
-                        style={{ flex: 1, padding: '0.5rem 0.875rem', borderRadius: '99px', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', fontFamily: 'Plus Jakarta Sans, sans-serif' }}
-                        onFocus={e => e.target.style.borderColor = 'var(--primary)'}
-                        onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                    />
-                    <button type="submit" disabled={loading || !newComment.trim()} style={{ background: 'var(--primary)', border: 'none', color: 'white', fontWeight: '700', cursor: 'pointer', borderRadius: '99px', padding: '0.5rem 1rem', fontSize: '0.8125rem', opacity: !newComment.trim() ? 0.5 : 1, transition: 'opacity 0.2s' }}>Gửi</button>
-                </form>
-            ) : (
-                <p style={{ fontSize: '0.8125rem', color: '#94a3b8', textAlign: 'center' }}>
-                    <Link to="/login" style={{ color: 'var(--primary)', fontWeight: '700', textDecoration: 'none' }}>Đăng nhập</Link> để bình luận
-                </p>
-            )}
-        </div>
-    );
-};
+import { useRealtimeFeed } from '../hooks/useRealtimeFeed';
+import { useMentions } from '../hooks/useMentions';
+import { useAIResponder } from '../hooks/useAIResponder';
+import { useFollowings } from '../hooks/useFollowings';
+import { createRTDBPost, followRTDBUser, unfollowRTDBUser } from '../services/firebase';
+import PostCard from '../components/Community/PostCard';
+import MentionSuggestions from '../components/Community/MentionSuggestions';
 
 const Community = () => {
     const { user, userProfile } = useAuth();
-    const [posts, setPosts] = useState([]);
-    const [loadingPosts, setLoadingPosts] = useState(true);
+    const { posts, loading: loadingFeed } = useRealtimeFeed(100);
+    const { followings } = useFollowings(user?.uid);
+    const { respondToPost } = useAIResponder();
+    const { suggestions, showSuggestions, handleInputChange, setShowSuggestions } = useMentions();
+
     const [newPost, setNewPost] = useState('');
-    const [posting, setPosting] = useState(false);
-    const [showForm, setShowForm] = useState(false);
+    const [isPosting, setIsPosting] = useState(false);
     const [isAnonymous, setIsAnonymous] = useState(false);
-    const [activeComments, setActiveComments] = useState({});
-    const [postError, setPostError] = useState('');
+    const textareaRef = useRef(null);
 
-    const maxChars = 500;
-
-    useEffect(() => {
-        if (!db) {
-            setLoadingPosts(false);
-            return;
-        }
-        const unsubscribe = subscribeToPosts((data) => {
-            setPosts(data);
-            setLoadingPosts(false);
-        });
-        return () => unsubscribe();
-    }, []);
-
-    const handlePost = async (e) => {
+    const handlePostSubmit = async (e) => {
         e.preventDefault();
-        const textToPost = newPost.trim();
-        if (!textToPost || !user) return;
-        setPosting(true);
-        setPostError('');
+        const text = newPost.trim();
+        if (!text || !user || isPosting) return;
+
+        setIsPosting(true);
         try {
-            const displayName = isAnonymous ? 'Người dùng ẩn danh' : (userProfile?.username || user.email?.split('@')[0] || 'Ẩn danh');
+            const authorName = isAnonymous ? 'Ẩn danh' : (userProfile?.username || user.email?.split('@')[0]);
             const authorPhotoURL = isAnonymous ? '' : (userProfile?.photoURL || '');
-            const postRef = await createPost({
-                text: textToPost,
+
+            const postId = await createRTDBPost({
+                text,
                 authorId: user.uid,
-                authorName: displayName,
-                authorPhotoURL: authorPhotoURL,
-                isAnonymous: isAnonymous
+                authorName,
+                authorPhotoURL,
+                isAnonymous
             });
 
-            // AI Logic for Post
-            const lowerText = textToPost.toLowerCase();
-            const isTagged = lowerText.includes('@ai') || lowerText.includes('@heartai');
-
-            if (isTagged || textToPost.length > 20) {
-                const { getGeminiResponse } = await import('../services/gemini');
-                const aiPrompt = isTagged
-                    ? `Người dùng vừa đăng bài và nhắc đến bạn: "${textToPost}". Hãy trả lời họ dưới tư cách HeartAI.`
-                    : `Phân tích bài đăng này: "${textToPost}". Nếu bài đăng này thể hiện sự cô đơn, buồn bã, áp lực hoặc cần lời khuyên tử tế, hãy viết một phản hồi chân thành (dưới 100 từ). Nếu không cần thiết, hãy trả lời chính xác từ "NONE".`;
-
-                const aiResponse = await getGeminiResponse(aiPrompt);
-                if (aiResponse && aiResponse.trim() !== "NONE") {
-                    await addComment(postRef.id, {
-                        text: aiResponse,
-                        authorId: 'ai-bot',
-                        authorName: 'HeartAI ✨',
-                        isAI: true
-                    });
-                }
-            }
-
             setNewPost('');
-            setShowForm(false);
+            setIsAnonymous(false);
+
+            // Trigger AI response logic
+            respondToPost(postId, text);
         } catch (err) {
             console.error(err);
-            setPostError('Đăng bài thất bại. Vui lòng thử lại.');
         } finally {
-            setPosting(false);
+            setIsPosting(false);
         }
     };
 
-    const handleDeletePost = async (postId) => {
-        if (!window.confirm('Bạn có chắc chắn muốn xóa bài viết này?')) return;
-        try {
-            const { deletePost } = await import('../services/firebase');
-            await deletePost(postId, user.uid);
-        } catch (err) {
-            alert(err.message);
-        }
+    const handleTextChange = (e) => {
+        const val = e.target.value;
+        setNewPost(val);
+        handleInputChange(val, e.target.selectionEnd || val.length);
     };
 
-    const handleLike = async (postId) => {
+    const handleSelectMention = (username) => {
+        const cursorPosition = textareaRef.current.selectionStart;
+        const textBeforeCursor = newPost.substring(0, cursorPosition);
+        const textAfterCursor = newPost.substring(cursorPosition);
+        const newText = textBeforeCursor.replace(/@\w*$/, `@${username} `) + textAfterCursor;
+        setNewPost(newText);
+        setShowSuggestions(false);
+        textareaRef.current.focus();
+    };
+
+    const handleToggleFollow = async (targetUid, isCurrentlyFollowing) => {
         if (!user) return;
         try {
-            await toggleLikePost(postId, user.uid);
+            if (isCurrentlyFollowing) {
+                await unfollowRTDBUser(user.uid, targetUid);
+            } else {
+                await followRTDBUser(user.uid, targetUid);
+            }
         } catch (err) {
-            console.error('Like error:', err);
+            console.error(err);
         }
     };
 
-    const toggleComments = (postId) => {
-        setActiveComments(prev => ({
-            ...prev,
-            [postId]: !prev[postId]
-        }));
-    };
-
-    const colors = ['#8b5cf6', '#6366f1', '#ec4899', '#06b6d4', '#10b981', '#f59e0b'];
-    const getColor = (initial) => colors[initial.charCodeAt(0) % colors.length];
-
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', width: '100%', padding: '1rem 0' }} className="community-container">
-            <div style={{ textAlign: 'center', marginBottom: '2.5rem', padding: '0 1rem' }}>
-                <h2 className="hero-gradient-text" style={{ fontSize: 'clamp(1.75rem, 6vw, 2.5rem)', fontWeight: '800', marginBottom: '0.75rem' }}>
-                    Cộng Đồng Chia Sẻ
-                </h2>
-                <p style={{ fontSize: 'clamp(0.9375rem, 3.5vw, 1.0625rem)', color: 'var(--text-light)', lineHeight: '1.6' }}>
-                    Nơi bạn có thể chia sẻ cảm xúc và nhận sự đồng cảm từ cộng đồng.
-                </p>
+        <div className="max-w-xl mx-auto px-4 min-h-screen pt-24 pb-20 font-sans selection:bg-indigo-100">
+            {/* Header / Navbar Glassmorphism */}
+            <header className="fixed top-0 left-0 right-0 h-16 bg-white/70 backdrop-blur-xl z-50 border-b border-gray-100/50 flex items-center shadow-[0_1px_10px_rgba(0,0,0,0.02)]">
+                <div className="max-w-xl mx-auto w-100 px-4 flex justify-between items-center w-full">
+                    <div className="flex items-center gap-2 group cursor-pointer">
+                        <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center transition-transform group-hover:scale-110">
+                            <span className="text-white font-black text-xl">H</span>
+                        </div>
+                        <h1 className="text-xl font-black tracking-[-0.05em] text-gray-900">HeartSpace</h1>
+                    </div>
+
+                    {user ? (
+                        <div className="flex items-center gap-3 bg-gray-50/50 p-1 pr-3 rounded-full border border-gray-100 group cursor-pointer hover:bg-gray-100/50 transition-colors">
+                            <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white shadow-sm">
+                                {userProfile?.photoURL ? (
+                                    <img src={userProfile.photoURL} className="w-full h-full object-cover" alt="" />
+                                ) : (
+                                    <div className="w-full h-full bg-indigo-500 flex items-center justify-center text-white text-[10px] font-black">
+                                        {(userProfile?.username?.[0] || 'U').toUpperCase()}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="hidden sm:block">
+                                <p className="text-[11px] font-black text-gray-900 leading-tight">@{userProfile?.username}</p>
+                                <p className="text-[9px] text-indigo-500 font-bold uppercase tracking-widest">{userProfile?.role}</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => window.location.href = '/login'}
+                            className="bg-gray-900 text-white px-5 py-2 rounded-full text-sm font-black transition-all hover:bg-gray-800 active:scale-95"
+                        >
+                            Đăng nhập
+                        </button>
+                    )}
+                </div>
+            </header>
+
+            {/* Post Creation Box */}
+            <div className="mb-8 p-6 bg-white rounded-[2.5rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-all focus-within:shadow-[0_8px_30px_rgb(0,0,0,0.05)] focus-within:border-gray-200">
+                <form onSubmit={handlePostSubmit}>
+                    <div className="flex gap-4">
+                        <div className="w-12 h-12 rounded-full bg-gray-50 flex-shrink-0 relative overflow-hidden ring-2 ring-gray-50 ring-offset-2">
+                            {userProfile?.photoURL && !isAnonymous ? (
+                                <img src={userProfile.photoURL} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-300 font-black text-lg bg-gray-50">
+                                    ?
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex-1 relative">
+                            <textarea
+                                ref={textareaRef}
+                                value={newPost}
+                                onChange={handleTextChange}
+                                placeholder="Có gì mới? Đừng giữ trong lòng nhé..."
+                                className="w-full border-none outline-none text-[1.125rem] py-2 bg-transparent resize-none font-medium text-gray-800 placeholder:text-gray-300 min-h-[100px]"
+                            />
+
+                            {showSuggestions && (
+                                <MentionSuggestions
+                                    suggestions={suggestions}
+                                    onSelect={handleSelectMention}
+                                    position={{ top: '100%', left: 0 }}
+                                />
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-50/50">
+                        <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer select-none group">
+                                <div className={`w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center ${isAnonymous ? 'bg-indigo-600 border-indigo-600 shadow-[0_0_10px_rgba(79,70,229,0.3)]' : 'border-gray-200 group-hover:border-gray-300'}`}>
+                                    {isAnonymous && (
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                    )}
+                                </div>
+                                <input
+                                    type="checkbox"
+                                    checked={isAnonymous}
+                                    onChange={(e) => setIsAnonymous(e.target.checked)}
+                                    className="hidden"
+                                />
+                                <span className={`text-xs font-black transition-colors ${isAnonymous ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-500'}`}>Đăng ẩn danh</span>
+                            </label>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={!newPost.trim() || isPosting}
+                            className={`group relative overflow-hidden px-8 py-2.5 rounded-full font-black text-sm transition-all shadow-sm active:scale-95 ${newPost.trim() && !isPosting
+                                ? 'bg-gray-900 text-white hover:bg-indigo-600 hover:shadow-lg'
+                                : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                }`}
+                        >
+                            <span className="relative z-10">{isPosting ? 'Thì thầm...' : 'Đăng thread'}</span>
+                        </button>
+                    </div>
+                </form>
             </div>
 
-            {/* Write Post Button / Form */}
-            <div className="glass-card" style={{ marginBottom: '2rem' }}>
-                {!showForm ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ width: '2.75rem', height: '2.75rem', background: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '800', fontSize: '1.125rem', flexShrink: 0 }}>
-                            {user ? (userProfile?.username?.[0].toUpperCase() || 'B') : 'Ẩ'}
-                        </div>
-                        {user ? (
-                            <button
-                                onClick={() => setShowForm(true)}
-                                style={{ flex: 1, padding: '0.875rem 1.25rem', background: '#f8fafc', border: '2px solid #e2e8f0', borderRadius: '999px', textAlign: 'left', color: '#94a3b8', cursor: 'pointer', fontSize: '0.9375rem', fontFamily: 'Plus Jakarta Sans, sans-serif', transition: 'all 0.2s' }}
-                                onMouseOver={e => { e.target.style.borderColor = 'var(--primary)'; e.target.style.background = '#faf5ff'; }}
-                                onMouseOut={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.background = '#f8fafc'; }}
-                            >
-                                Hôm nay bạn cảm thấy thế nào? Chia sẻ với cộng đồng...
-                            </button>
-                        ) : (
-                            <div style={{ flex: 1 }}>
-                                <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
-                                    <Link to="/login" style={{ color: 'var(--primary)', fontWeight: '700', textDecoration: 'none' }}>Đăng nhập</Link> để chia sẻ câu chuyện của bạn với cộng đồng.
-                                </p>
+            {/* Feed Section */}
+            <div className="space-y-0 relative">
+                {loadingFeed ? (
+                    <div className="space-y-8 px-2">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="animate-pulse flex gap-5">
+                                <div className="w-12 h-12 bg-gray-100 rounded-full" />
+                                <div className="flex-1 space-y-4 pt-2">
+                                    <div className="h-4 bg-gray-100 rounded-full w-1/4" />
+                                    <div className="space-y-2">
+                                        <div className="h-4 bg-gray-50 rounded-full w-full" />
+                                        <div className="h-4 bg-gray-50 rounded-full w-2/3" />
+                                    </div>
+                                </div>
                             </div>
-                        )}
+                        ))}
+                    </div>
+                ) : posts.length > 0 ? (
+                    <div className="animate-fade-in divide-y divide-gray-50/50">
+                        {posts.map(post => (
+                            <PostCard
+                                key={post.id}
+                                post={post}
+                                isFollowing={!!followings[post.authorId]}
+                                onToggleFollow={handleToggleFollow}
+                            />
+                        ))}
+
+                        {/* Final Glassmorphism Footer */}
+                        <div className="py-20 text-center">
+                            <div className="w-1.5 h-1.5 bg-gray-200 rounded-full mx-auto mb-4" />
+                            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-300">Bạn đã xem hết hôm nay</p>
+                        </div>
                     </div>
                 ) : (
-                    <form onSubmit={handlePost}>
-                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                            <div style={{ width: '2.75rem', height: '2.75rem', background: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '800', fontSize: '1.125rem', flexShrink: 0 }}>
-                                {isAnonymous ? 'Ẩ' : (userProfile?.username?.[0].toUpperCase() || 'B')}
-                            </div>
-                            <textarea
-                                value={newPost}
-                                onChange={e => setNewPost(e.target.value.slice(0, maxChars))}
-                                placeholder="Chia sẻ cảm xúc, suy nghĩ hay câu chuyện của bạn..."
-                                autoFocus
-                                rows={4}
-                                style={{ flex: 1, padding: '0.875rem', border: '2px solid #e2e8f0', borderRadius: '1rem', fontSize: '0.9375rem', resize: 'none', outline: 'none', fontFamily: 'Plus Jakarta Sans, sans-serif', color: '#1e293b', lineHeight: '1.6' }}
-                                onFocus={e => e.target.style.borderColor = 'var(--primary)'}
-                                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                            />
+                    <div className="py-24 text-center bg-gray-50/30 rounded-[3rem] border border-dashed border-gray-200">
+                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                            <span className="text-2xl">🍃</span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem', color: '#64748b' }}>
-                                <input type="checkbox" checked={isAnonymous} onChange={e => setIsAnonymous(e.target.checked)} />
-                                Đăng bài ẩn danh
-                            </label>
-                            <div style={{ display: 'flex', gap: '0.75rem' }}>
-                                <button type="button" onClick={() => { setShowForm(false); setNewPost(''); }} className="btn" style={{ padding: '0.625rem 1.25rem', background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0', fontSize: '0.875rem' }}>Hủy</button>
-                                <button type="submit" className="btn btn-primary" disabled={!newPost.trim() || posting} style={{ padding: '0.625rem 1.5rem', fontSize: '0.875rem' }}>
-                                    {posting ? 'Đang đăng...' : '✍️ Đăng bài'}
-                                </button>
-                            </div>
-                        </div>
-                    </form>
+                        <p className="text-gray-900 font-black mb-1">Cánh đồng đang vắng vẻ</p>
+                        <p className="text-gray-400 text-xs font-medium">Hãy là người đầu tiên gieo mầm cảm xúc nhé.</p>
+                    </div>
                 )}
             </div>
 
-            {/* Posts Feed */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {loadingPosts && (
-                    <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ width: '2rem', height: '2rem', border: '3px solid rgba(139,92,246,0.2)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-                        Đang tải bài viết...
-                    </div>
-                )}
-                {!loadingPosts && posts.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-                        Chưa có bài đăng nào. Hãy là người đầu tiên chia sẻ! 💬
-                    </div>
-                )}
-                {posts.map((post) => (
-                    <div key={post.id} className="glass-card">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: '1.25rem' }}>
-                            {post.authorPhotoURL ? (
-                                <img
-                                    src={post.authorPhotoURL}
-                                    alt={post.authorName}
-                                    style={{ width: '2.75rem', height: '2.75rem', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                                />
-                            ) : (
-                                <div style={{ width: '2.75rem', height: '2.75rem', background: getColor(post.authorName?.[0] || 'A'), color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '1.125rem', flexShrink: 0 }}>
-                                    {(post.authorName?.[0] || 'A').toUpperCase()}
-                                </div>
-                            )}
-                            <div>
-                                <div style={{ fontWeight: '800', color: '#1e293b', fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                                    {post.authorName}
-                                    {post.authorId === 'ai-bot' && <span style={{ fontSize: '0.75rem' }}>✨</span>}
-                                </div>
-                                <div style={{ fontSize: '0.8125rem', color: '#94a3b8' }}>
-                                    {post.createdAt?.toDate().toLocaleDateString('vi-VN')}
-                                </div>
-                            </div>
-                            {user && post.authorId === user.uid && (
-                                <button
-                                    onClick={() => handleDeletePost(post.id)}
-                                    style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1.125rem', padding: '0.5rem' }}
-                                    title="Xóa bài viết"
-                                >
-                                    🗑️
-                                </button>
-                            )}
+            {/* Floating Notification Indicator (Optional UX) */}
+            {user && (
+                <div className="fixed bottom-6 right-6 z-50">
+                    <button
+                        className="w-14 h-14 bg-gray-900 text-white rounded-2xl shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 hover:rotate-3 group"
+                        onClick={() => window.location.href = '/notifications'}
+                    >
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-indigo-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-black group-hover:animate-bounce">
+                            !
                         </div>
-                        <p style={{ fontSize: '1rem', lineHeight: '1.8', color: '#475569', marginBottom: '1.5rem' }}>{post.text}</p>
-                        <div style={{ display: 'flex', gap: '1.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '1.25rem' }}>
-                            <button
-                                onClick={() => handleLike(post.id)}
-                                style={{
-                                    background: 'none', border: 'none',
-                                    color: (post.likedBy || []).includes(user?.uid) ? '#ef4444' : '#94a3b8',
-                                    fontWeight: '700', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                    fontSize: '0.9375rem', transition: 'all 0.2s',
-                                    fontFamily: 'Plus Jakarta Sans, sans-serif'
-                                }}
-                            >
-                                {(post.likedBy || []).includes(user?.uid) ? '❤️' : '🤍'} {post.likes || 0}
-                            </button>
-                            <button
-                                onClick={() => toggleComments(post.id)}
-                                style={{ background: 'none', border: 'none', color: '#94a3b8', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9375rem', fontFamily: 'Plus Jakarta Sans, sans-serif' }}
-                            >
-                                💬 {post.commentCount || 0}
-                            </button>
-                            {user && post.authorId !== user.uid && post.authorId !== 'ai-bot' && (
-                                <Link
-                                    to={`/messages/${post.authorId}`}
-                                    style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9375rem', textDecoration: 'none' }}
-                                >
-                                    ✉️ Nhắn tin
-                                </Link>
-                            )}
-                            {user && post.authorId !== user.uid && (
-                                <button
-                                    onClick={async () => {
-                                        const reason = prompt("Lý do báo cáo vi phạm:");
-                                        if (reason) {
-                                            const { reportUser } = await import('../services/firebase');
-                                            const reportRef = await reportUser(user.uid, post.authorId, reason, post.text);
-                                            alert("Đã gửi báo cáo. Cảm ơn bạn đã hỗ trợ cộng đồng!");
+                    </button>
+                </div>
+            )}
 
-                                            // Trigger AI check right away for the report (background)
-                                            try {
-                                                const { getGeminiResponse } = await import('../services/gemini');
-                                                const aiPrompt = `Phân tích báo cáo vi phạm sau:
-                                                Lý do báo cáo: "${reason}"
-                                                Nội dung bài viết: "${post.text}"
-                                                Hãy cho biết nội dung này có vi phạm tiêu chuẩn cộng đồng không. Trả lời: "VI PHẠM" hoặc "KHÔNG VI PHẠM" và 1 câu giải thích.`;
-                                                const analysis = await getGeminiResponse(aiPrompt);
-
-                                                const { db } = await import('../services/firebase');
-                                                const { doc, updateDoc } = await import('firebase/firestore');
-                                                await updateDoc(doc(db, "reports", reportRef.id), {
-                                                    aiAnalysis: analysis,
-                                                    status: 'reviewed'
-                                                });
-                                            } catch (aiErr) {
-                                                console.error("AI Analysis failed:", aiErr);
-                                            }
-                                        }
-                                    }}
-                                    style={{ background: 'none', border: 'none', color: '#94a3b8', fontWeight: '600', cursor: 'pointer', fontSize: '0.8125rem', marginLeft: 'auto' }}
-                                    onMouseOver={e => e.target.style.color = '#ef4444'}
-                                    onMouseOut={e => e.target.style.color = '#94a3b8'}
-                                >
-                                    🚩 Báo cáo
-                                </button>
-                            )}
-                        </div>
-                        {activeComments[post.id] && <CommentSection postId={post.id} user={user} userProfile={userProfile} />}
-                    </div>
-                ))}
-            </div>
+            <style>{`
+                @keyframes slide-up {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes fade-in {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+                .animate-fade-in { animation: fade-in 0.5s ease-out; }
+                .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: .7; }
+                }
+            `}</style>
         </div>
     );
 };

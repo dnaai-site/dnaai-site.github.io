@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db, logout } from '../services/firebase';
+import { auth, db, rtdb, logout } from '../services/firebase';
+import { ref as dbRef, onValue } from 'firebase/database';
 
 const AuthContext = createContext(null);
 
@@ -32,47 +32,50 @@ export const AuthProvider = ({ children }) => {
             }
         }, 8000);
 
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
             clearTimeout(timeout);
 
             if (firebaseUser) {
                 setUser(firebaseUser);
 
-                // Load profile không block UI
-                try {
-                    if (db) {
-                        const { getUserRole } = await import('../services/firebase');
-                        const docSnap = await getDoc(doc(db, 'users', firebaseUser.uid));
-                        if (docSnap.exists()) {
-                            const data = docSnap.data();
-                            // Luôn ưu tiên logic role từ email để đảm bảo admin/dev không bị mất quyền
+                // Subscribe to RTDB user node for realtime updates
+                if (rtdb) {
+                    const userRef = dbRef(rtdb, `users/${firebaseUser.uid}`);
+                    const unsubscribeRTDB = onValue(userRef, async (snapshot) => {
+                        if (snapshot.exists()) {
+                            const data = snapshot.val();
+                            const { getUserRole } = await import('../services/firebase');
                             const dynamicRole = getUserRole(firebaseUser.email);
                             setUserProfile({ ...data, role: dynamicRole || data.role });
                         } else {
+                            // Fallback to basic info if RTDB node doesn't exist yet
+                            const { getUserRole } = await import('../services/firebase');
                             setUserProfile({
-                                username: firebaseUser.email?.split('@')[0] || 'Người dùng',
+                                uid: firebaseUser.uid,
+                                username: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Người dùng',
                                 email: firebaseUser.email,
                                 photoURL: firebaseUser.photoURL || '',
                                 role: getUserRole(firebaseUser.email)
                             });
                         }
-                    }
-                } catch (error) {
-                    console.warn('Profile fetch error:', error);
-                    const { getUserRole } = await import('../services/firebase');
-                    setUserProfile({
-                        username: firebaseUser.email?.split('@')[0] || 'Người dùng',
-                        email: firebaseUser.email,
-                        photoURL: firebaseUser.photoURL || '',
-                        role: getUserRole(firebaseUser.email)
+                        setAuthResolved(true);
+                    }, (error) => {
+                        console.error("RTDB Profile Subscribe Error:", error);
+                        setAuthResolved(true);
                     });
+
+                    // Cleanup RTDB listener when auth state changes or unmounts
+                    return () => {
+                        unsubscribeRTDB();
+                    };
+                } else {
+                    setAuthResolved(true);
                 }
             } else {
                 setUser(null);
                 setUserProfile(null);
+                setAuthResolved(true);
             }
-
-            setAuthResolved(true);
         });
 
         return () => {

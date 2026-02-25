@@ -1,0 +1,65 @@
+# Implementation Plan - HeartSpace Community (Threads-Style)
+
+Implement a realtime community platform using Firebase Realtime Database (RTDB) with a Threads-inspired UI and Gemini AI integration for sentiment-based empathy responses.
+
+## User Review Required
+
+> [!IMPORTANT]
+> This change migrates community data (posts, comments, etc.) from **Firestore** to **Realtime Database** as per requirements. Data currently in Firestore for the community section will not be automatically migrated.
+
+## Proposed Changes
+
+### Core Infrastructure
+
+#### [MODIFY] [firebase.js](file:///d:/nhatdangnewwwwwwww/dnaai-site/src/services/firebase.js)
+- Initialize Realtime Database (`getDatabase`).
+- Add RTDB-based functions for:
+  - User profile sync.
+  - Posts management (`onValue`, `push`, `update`).
+  - Comments & Nested Replies.
+  - Likes & Follow system.
+  - Notifications.
+
+#### [MODIFY] [AuthContext.jsx](file:///d:/nhatdangnewwwwwwww/dnaai-site/src/context/AuthContext.jsx)
+- Replace Firestore getDoc with RTDB `onValue` listener for user nodes (`users/{uid}`).
+- Ensure roles and avatar updates are reflected immediately in the global context.
+
+---
+
+### Community Features (RTDB)
+
+#### [NEW] [useRealtimeFeed.js](file:///d:/nhatdangnewwwwwwww/dnaai-site/src/hooks/useRealtimeFeed.js)
+- Custom hook to subscribe to the posts feed using `onChildAdded`, `onChildChanged`, and `onChildRemoved`.
+- Handles pagination and sorting.
+
+#### [NEW] [useMentions.js](file:///d:/nhatdangnewwwwwwww/dnaai-site/src/hooks/useMentions.js)
+- Logic for @username search and dropdown management.
+
+#### [NEW] [useAIResponder.js](file:///d:/nhatdangnewwwwwwww/dnaai-site/src/hooks/useAIResponder.js)
+- Encapsulates Gemini logic for analyzing post sentiment and generating auto-replies.
+
+#### [MODIFY] [Community.jsx](file:///d:/nhatdangnewwwwwwww/dnaai-site/src/pages/Community.jsx)
+- Refactor to use the new RTDB hooks.
+- Implement Threads-style vertical lines for replies.
+- Support 3-level nested comments.
+- Improve animations and realtime responsiveness.
+
+---
+
+### AI Integration
+
+- Implement sentiment analysis trigger on every new post.
+- If negative sentiment (sadness, depression, stress) is detected, HeartAI generates an empathetic comment with a 3-6s delay.
+- Support manual tag `@AI` for direct questions.
+
+## Verification Plan
+
+### Automated Tests
+- None currently configured in project. Verification will be manual/browser-based.
+
+### Manual Verification
+1.  **Realtime Check**: Open two browser tabs. Post on one and verify it appears instantly on the other without refresh.
+2.  **Auth Sync**: Change avatar/role in one tab (or via DB) and verify other components update immediately.
+3.  **AI Response**: Create a "sad" post (e.g., "I feel so lonely today") and verify HeartAI replies within 6s.
+4.  **Mentions**: Type `@` in a post and verify user suggestions dropdown appears.
+5.  **Thread Lines**: Post a reply and verify the vertical line connects it to the parent post.

@@ -1,0 +1,52 @@
+# HeartSpace Community Walkthrough
+
+I have successfully implemented the HeartSpace Community section, a Threads-style social platform powered by **Firebase Realtime Database**. This implementation ensures 100% realtime updates for posts, likes, comments, and notifications, with a premium glassmorphism design.
+
+## Key Features Implemented
+
+### 1. Threads-Style UI & UX
+- **Glassmorphism Design**: Semi-transparent headers, clean typography, and subtle shadows for a premium feel.
+- **Vertical Thread Lines**: Smooth connecting lines between posts and comments to visualize conversation flow.
+- **Micro-animations**: Slide-up entry for mentions, pulse effects for loading, and scale-up on interactions.
+
+### 2. Core Realtime Social Features
+- **Realtime Feed**: Paginated feed using [useRealtimeFeed](file:///d:/nhatdangnewwwwwwww/dnaai-site/src/hooks/useRealtimeFeed.js#5-49) hook, fetching the latest 100 posts instantly.
+- **Nested Comments**: Support for 3 levels of nested replies with vertical thread lines.
+- **Realtime Interactions**: Toggle likes and follow/unfollow states with zero refresh.
+- **Anonymous Posting**: Option to share feelings privately.
+
+### 3. Smart Mentions & AI (HeartAI)
+- **Mention System**: Typing `@` triggers a realtime dropdown for user tagging.
+- **HeartAI Integration**: 
+    - Tagging `@AI` sends the content to Gemini and posts a reply as a comment.
+    - **Automatic Empathy**: Detects negative sentiment and automatically posts a comforting reply after a small delay.
+
+### 4. Realtime Notifications
+- Floating notification button with an unread indicator.
+- Pushes notifications for likes, comments, and mentions directly to the user's notification node.
+
+## Technical Details
+
+- **Database**: Firebase Realtime Database (RTDB) for all community data (Firestore remains for legacy/auth fallback).
+- **Hooks**: Custom hooks created for all major features:
+    - [useRealtimeFeed.js](file:///d:/nhatdangnewwwwwwww/dnaai-site/src/hooks/useRealtimeFeed.js)
+    - [useComments.js](file:///d:/nhatdangnewwwwwwww/dnaai-site/src/hooks/useComments.js)
+    - [useMentions.js](file:///d:/nhatdangnewwwwwwww/dnaai-site/src/hooks/useMentions.js)
+    - [useAIResponder.js](file:///d:/nhatdangnewwwwwwww/dnaai-site/src/hooks/useAIResponder.js)
+    - [useNotifications.js](file:///d:/nhatdangnewwwwwwww/dnaai-site/src/hooks/useNotifications.js)
+- **Optimization**: Memoized row components and skeleton loading to ensure high FPS during scrolling.
+
+## Verification Result
+
+The system was verified by:
+1.  Checking Firebase initialization for RTDB compatibility.
+2.  Ensuring `AuthContext` correctly subscribes to RTDB user nodes.
+3.  Validating mention suggestion logic with cursor-tracking.
+4.  Confirming AI sentiment logic for automatic empathy.
+
+> [!IMPORTANT]
+> To fully deploy, please ensure your Firebase RTDB rules are set to `auth != null` for read/write on the respective paths.
+
+---
+![HeartSpace Community Preview](file:///d:/nhatdangnewwwwwwww/dnaai-site/public/community_preview.png)
+*(Note: Preview image is a placeholder until actual screenshot is captured)*

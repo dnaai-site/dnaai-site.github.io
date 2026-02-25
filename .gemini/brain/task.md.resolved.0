@@ -1,0 +1,27 @@
+# Task: HeartSpace Community (Threads-Style) Implementation
+
+## Preparation & Foundation
+- [/] Review and fix [AuthContext.jsx](file:///d:/nhatdangnewwwwwwww/dnaai-site/src/context/AuthContext.jsx) for realtime user data
+- [ ] Update [firebase.js](file:///d:/nhatdangnewwwwwwww/dnaai-site/src/services/firebase.js) with Realtime Database config
+- [ ] Define Firebase Realtime Database Security Rules
+
+## Core Community Features (Realtime Database)
+- [ ] Implement `useRealtimeFeed` hook
+- [ ] Implement `PostCard` component (Threads-style)
+- [ ] Implement `CommentThread` (3-level nested, thread-lines)
+- [ ] Implement Like & Repost system
+- [ ] Implement Follow system
+
+## Mentions & AI Integration
+- [ ] Implement `MentionInput` with @username dropdown
+- [ ] Implement @AI tag functionality
+- [ ] Implement automatic sentiment-based AI empathy replies
+
+## Notifications & UX
+- [ ] Implement Realtime Notifications system
+- [ ] Add Loading Skeletons & Suspense fallbacks
+- [ ] Optimize performance (Virtualization, Memoization)
+
+## Verification & Polish
+- [ ] Verify realtime behavior with multi-user simulation
+- [ ] Final UI/UX polish (Glassmorphism & Threads-style)

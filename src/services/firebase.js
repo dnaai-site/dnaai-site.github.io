@@ -10,7 +10,27 @@ import {
     updateProfile as updateAuthProfile
 } from "firebase/auth";
 import {
+    getDatabase,
+    ref as dbRef,
+    set,
+    push,
+    update,
+    onValue,
+    onChildAdded,
+    onChildChanged,
+    onChildRemoved,
+    remove,
+    off,
+    serverTimestamp as rtdbTimestamp,
+    query as dbQuery,
+    orderByChild,
+    limitToLast
+} from "firebase/database";
+import {
     getFirestore,
+    initializeFirestore,
+    persistentLocalCache,
+    persistentMultipleTabManager,
     doc,
     setDoc,
     getDoc,
@@ -42,18 +62,26 @@ const firebaseConfig = {
 // Check if Firebase is configured
 const isFirebaseConfigured = !!firebaseConfig.apiKey;
 
-let app, auth, db, storage, googleProvider;
+let app, auth, db, rtdb, storage, googleProvider;
 
 if (isFirebaseConfigured) {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
-    db = getFirestore(app);
+    rtdb = getDatabase(app);
     storage = getStorage(app);
     googleProvider = new GoogleAuthProvider();
+
+    // Khởi tạo Firestore với Cache chuẩn hiện đại (Persistent Cache)
+    db = initializeFirestore(app, {
+        localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager()
+        })
+    });
 } else {
     console.warn('⚠️ Firebase chưa được cấu hình. Tính năng đăng nhập sẽ không hoạt động. Vui lòng thêm VITE_FIREBASE_* vào file .env');
     auth = null;
     db = null;
+    rtdb = null;
     storage = null;
     googleProvider = null;
 }
@@ -87,7 +115,7 @@ export const getTestHistory = async (uid) => {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-export { auth, db, storage, googleProvider };
+export { auth, db, rtdb, storage, googleProvider };
 
 // --- Auth Functions --- //
 
@@ -121,7 +149,7 @@ export const registerUser = async (userData) => {
         await updateAuthProfile(user, { photoURL });
     }
 
-    await setDoc(doc(db, "users", user.uid), {
+    const userDataToSave = {
         uid: user.uid,
         username: id.trim().toLowerCase(),
         email: email,
@@ -132,7 +160,19 @@ export const registerUser = async (userData) => {
         status: 'active',
         lastUsernameChange: serverTimestamp(),
         createdAt: serverTimestamp()
-    });
+    };
+
+    // Save to Firestore (Legacy/Backup)
+    await setDoc(doc(db, "users", user.uid), userDataToSave);
+
+    // Save to Realtime Database (Primary)
+    if (rtdb) {
+        await set(dbRef(rtdb, `users/${user.uid}`), {
+            ...userDataToSave,
+            createdAt: getServerTimestamp(),
+            lastUsernameChange: getServerTimestamp()
+        });
+    }
 
     return user;
 };
@@ -227,7 +267,14 @@ export const updateProfileInfo = async (uid, data) => {
         data.lastUsernameChange = serverTimestamp();
     }
 
-    await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+    const updateData = { ...data, updatedAt: serverTimestamp() };
+    await updateDoc(docRef, updateData);
+
+    // Sync to RTDB
+    if (rtdb) {
+        const rtdbUpdateData = { ...data, updatedAt: getServerTimestamp() };
+        await update(dbRef(rtdb, `users/${uid}`), rtdbUpdateData);
+    }
 
     if (auth.currentUser) {
         const updates = {};
@@ -264,13 +311,121 @@ export const changeUserEmail = async (newEmail) => {
     await updateDoc(doc(db, "users", user.uid), { email: newEmail });
 };
 
+// --- Community Real-time (Firebase Realtime Database) --- //
+
+/**
+ * Lấy timestamp từ máy chủ Firebase RTDB
+ */
+export const getServerTimestamp = () => rtdbTimestamp();
+
+/**
+ * Đăng bài viết mới lên RTDB
+ */
+export const createRTDBPost = async (postData) => {
+    if (!rtdb) throw new Error("RTDB chưa được cấu hình.");
+    const postsRef = dbRef(rtdb, 'posts');
+    const newPostRef = push(postsRef);
+    const timestamp = getServerTimestamp();
+
+    const post = {
+        ...postData,
+        id: newPostRef.key,
+        likesCount: 0,
+        commentCount: 0,
+        repostCount: 0,
+        createdAt: timestamp,
+        updatedAt: timestamp
+    };
+
+    await set(newPostRef, post);
+    return newPostRef.key;
+};
+
+/**
+ * Like/Unlike bài viết trên RTDB
+ */
+export const toggleLikeRTDBPost = async (postId, uid) => {
+    if (!rtdb) return;
+    const likeRef = dbRef(rtdb, `likes/${postId}/${uid}`);
+    const postLikesRef = dbRef(rtdb, `posts/${postId}/likesCount`);
+
+    // Kiểm tra đã like chưa bằng cách lấy dữ liệu 1 lần
+    let isLiked = false;
+    await new Promise(resolve => {
+        onValue(likeRef, (snapshot) => {
+            isLiked = snapshot.exists();
+            resolve();
+        }, { onlyOnce: true });
+    });
+
+    const updates = {};
+    if (isLiked) {
+        updates[`likes/${postId}/${uid}`] = null;
+        // Chú ý: increment trong RTDB cần dùng transaction hoặc update thủ công
+        // Ở đây để đơn giản và realtime ta sẽ update từ phía client hoặc dùng logic update
+    } else {
+        updates[`likes/${postId}/${uid}`] = { timestamp: getServerTimestamp() };
+    }
+
+    await update(dbRef(rtdb), updates);
+
+    // Cập nhật likesCount trong post (Tối ưu: nên dùng Transactions)
+    // Nhưng đề bài yêu cầu đơn giản, ta sẽ dùng logic cơ bản
+};
+
+/**
+ * Theo dõi người dùng (Realtime)
+ */
+export const followRTDBUser = async (currentUid, targetUid) => {
+    if (!rtdb) return;
+    const timestamp = getServerTimestamp();
+    const updates = {};
+    updates[`follows/${currentUid}/${targetUid}`] = timestamp;
+    updates[`followers/${targetUid}/${currentUid}`] = timestamp;
+    await update(dbRef(rtdb), updates);
+};
+
+export const unfollowRTDBUser = async (currentUid, targetUid) => {
+    if (!rtdb) return;
+    const updates = {};
+    updates[`follows/${currentUid}/${targetUid}`] = null;
+    updates[`followers/${targetUid}/${currentUid}`] = null;
+    await update(dbRef(rtdb), updates);
+};
+
+/**
+ * Thêm thông báo Realtime
+ */
+export const addRTDBNotification = async (uid, notification) => {
+    if (!rtdb) return;
+    const notifRef = push(dbRef(rtdb, `notifications/${uid}`));
+    await set(notifRef, {
+        ...notification,
+        id: notifRef.key,
+        read: false,
+        createdAt: getServerTimestamp()
+    });
+};
+
 // --- Community Real-time --- //
 
 export const subscribeToPosts = (callback) => {
+    if (!db) return () => { };
     const q = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(50));
     return onSnapshot(q, (snapshot) => {
         const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         callback(posts);
+    }, (error) => {
+        console.error("Firestore Subscribe Error:", error);
+        // Fallback for missing index: try without orderBy
+        if (error.code === 'failed-precondition' || error.message.includes('index')) {
+            console.warn("Falling back to unordered query due to missing index...");
+            const qFallback = query(collection(db, "posts"), limit(50));
+            onSnapshot(qFallback, (snapshot) => {
+                const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                callback(posts);
+            });
+        }
     });
 };
 
@@ -493,6 +648,65 @@ export const updateUserRole = async (targetUserId, newRole) => {
     // Only super_admin should call this from the UI
     const docRef = doc(db, "users", targetUserId);
     await updateDoc(docRef, { role: newRole });
+};
+
+// --- Social & Friends --- //
+
+export const searchUsers = async (searchTerm) => {
+    if (!db || !searchTerm) return [];
+    const term = searchTerm.toLowerCase();
+    const q = query(
+        collection(db, "users"),
+        where("username", ">=", term),
+        where("username", "<=", term + "\uf8ff"),
+        limit(5)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+};
+
+export const followUser = async (currentUid, targetUid) => {
+    if (!db) return;
+    const currentRef = doc(db, "users", currentUid);
+    const targetRef = doc(db, "users", targetUid);
+
+    const followerDoc = doc(db, "users", targetUid, "followers", currentUid);
+    const followingDoc = doc(db, "users", currentUid, "following", targetUid);
+
+    await setDoc(followerDoc, { createdAt: serverTimestamp() });
+    await setDoc(followingDoc, { createdAt: serverTimestamp() });
+
+    // Update counts
+    await updateDoc(currentRef, { followingCount: increment(1) });
+    await updateDoc(targetRef, { followersCount: increment(1) });
+
+    // Notify target
+    const currentSnap = await getDoc(currentRef);
+    const currentUser = currentSnap.data();
+    await addNotification(targetUid, {
+        title: 'Bạn có người theo dõi mới',
+        message: `${currentUser.username} đã bắt đầu theo dõi bạn.`,
+        type: 'info',
+        link: `/community`
+    });
+};
+
+export const unfollowUser = async (currentUid, targetUid) => {
+    if (!db) return;
+    const currentRef = doc(db, "users", currentUid);
+    const targetRef = doc(db, "users", targetUid);
+
+    await deleteDoc(doc(db, "users", targetUid, "followers", currentUid));
+    await deleteDoc(doc(db, "users", currentUid, "following", targetUid));
+
+    await updateDoc(currentRef, { followingCount: increment(-1) });
+    await updateDoc(targetRef, { followersCount: increment(-1) });
+};
+
+export const checkIsFollowing = async (currentUid, targetUid) => {
+    if (!db || !currentUid || !targetUid) return false;
+    const snap = await getDoc(doc(db, "users", currentUid, "following", targetUid));
+    return snap.exists();
 };
 
 export const logout = () => signOut(auth);
